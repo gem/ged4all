@@ -1,0 +1,20 @@
+sudo: false
+
+language: python
+
+python:
+ - "2.7"
+
+cache:
+  pip: true
+
+install:
+  - pip -q install -r requirements.txt
+
+pre_script:
+  - cp python/db_settings.py.template python/db_settings.py
+
+script: 
+  # FIXME
+  - ./python/import_exposure_nrml.py || true
+  - ./python/export_exposure_nrml.py || true
