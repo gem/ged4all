@@ -11,7 +11,7 @@ cache:
 install:
   - pip -q install -r requirements.txt
 
-pre_script:
+before_script:
   - cp python/db_settings.py.template python/db_settings.py
 
 script: 
