@@ -7,3 +7,11 @@ experimental.
 
 Note also that Python code requires an installation of the OpenQuake
 Engine and makes use of the underlying baselib and hazardlib libraries
+
+## Quick setup
+
+```bash
+virtualenv gedenv
+source gedenv/bin/activate
+pip install -r requirements.txt
+```
