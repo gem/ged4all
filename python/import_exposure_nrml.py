@@ -32,7 +32,7 @@ from django.conf import settings
 import db_settings
 settings.configure(DATABASES=db_settings.DATABASES)
 
-#VERBOSE = False
+# VERBOSE = False
 VERBOSE = True
 
 
@@ -52,7 +52,6 @@ def _get_area(ex):
     area_type = None
     try:
         area_unit = ex.conversions.area['unit']
-        #area_type = ex.conversions.area['type'][0]
         area_type = ex.conversions.area['type']
     except Exception:
         # area is optional, ignore errors
@@ -97,8 +96,6 @@ def _import_cost_type(cursor, cost_type, cost_name, model_id):
     """
     Import cost_type information into model_cost_type table
     """
-    # I don't understand why cost_type_name is a list, expecting string
-    #cost_type_name = cost_type['type'][0]
     cost_type_name = cost_type['type']
     cursor.execute(COST_TYPE_QUERY, [
         cost_type.attrib.get('unit'),
@@ -196,9 +193,6 @@ def _import_assets(cursor, ex, ctd, model_id):
 
         for cost in _get_costs(asset):
             cursor.execute(COST_QUERY, [
-                # Why is the type attribute a list?
-                # Get cost type id from dict
-                #ctd[cost['type'][0]],
                 ctd[cost['type']],
                 cost['value'],
                 asset_id
