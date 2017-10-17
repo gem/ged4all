@@ -34,7 +34,7 @@ from django.conf import settings
 import db_settings
 settings.configure(DATABASES=db_settings.DATABASES)
 
-VERBOSE = True
+VERBOSE = False
 
 
 def verbose_message(msg):
@@ -107,40 +107,42 @@ def _handle_cost_types(cursor, model_id, conv):
 
 
 def _handle_costs(anode, cursor, asset, ctd):
-    costs_node = etree.SubElement(anode, 'costs')
     cursor.execute(COST_QUERY, [asset['id']])
     cost_rows = dictfetchall(cursor)
-    for cost in cost_rows:
-        attr = {
-            'type': ctd[cost['cost_type_id']],
-            'value': '{:.5F}'.format(cost['value'])
-        }
-        if cost['deductible'] is not None:
-            attr['deductible'] = '{:.5F}'.format(cost['deductible'])
-        if cost['insurance_limit'] is not None:
-            attr['insuranceLimit'] = '{:.5F}'.format(
-                cost['insurance_limit'])
-        etree.SubElement(costs_node, 'cost', attr)
+    if cost_rows:
+        costs_node = etree.SubElement(anode, 'costs')
+        for cost in cost_rows:
+            attr = {
+                'type': ctd[cost['cost_type_id']],
+                'value': '{:.5F}'.format(cost['value'])
+            }
+            if cost['deductible'] is not None:
+                attr['deductible'] = '{:.5F}'.format(cost['deductible'])
+            if cost['insurance_limit'] is not None:
+                attr['insuranceLimit'] = '{:.5F}'.format(
+                    cost['insurance_limit'])
+            etree.SubElement(costs_node, 'cost', attr)
 
 
 def _handle_occupancy(anode, cursor, asset):
-    occs_node = etree.SubElement(anode, 'occupancies')
     cursor.execute(OCC_QUERY, [asset['id']])
     occ_rows = dictfetchall(cursor)
-    for occ in occ_rows:
-        etree.SubElement(occs_node, 'occupancy', {
-            'period': occ['period'],
-            'occupants': '{:g}'.format(occ['occupants'])
-        })
+    if occ_rows:
+        occs_node = etree.SubElement(anode, 'occupancies')
+        for occ in occ_rows:
+            etree.SubElement(occs_node, 'occupancy', {
+                'period': occ['period'],
+                'occupants': '{:g}'.format(occ['occupants'])
+            })
 
 
 def _handle_tags(anode, cursor, asset):
-    tags_node = etree.SubElement(anode, 'tags')
     cursor.execute(TAGS_QUERY, [asset['id']])
     tag_rows = dictfetchall(cursor)
-    tag_dict = {}
-    for tag in tag_rows:
-        tags_node.attrib[tag['name']] = tag['value']
+    if tag_rows:
+        tags_node = etree.SubElement(anode, 'tags')
+        for tag in tag_rows:
+            tags_node.attrib[tag['name']] = tag['value']
 
 
 def _build_tree(model_id, model_dict, cursor):
@@ -177,15 +179,13 @@ def _build_tree(model_id, model_dict, cursor):
         })
         if asset['area'] is not None:
             anode.set('area', '{:g}'.format(asset['area']))
-        loc_node = etree.SubElement(anode, 'location', {
+        etree.SubElement(anode, 'location', {
             'lon': '{:g}'.format(asset['lon']),
             'lat': '{:g}'.format(asset['lat'])
         })
         if asset['full_geom'] is not None:
-            etree.SubElement(anode, 'geometry').text = asset['full_geom']
-            # etree.SubElement(anode, 'geometry', {
-            #    'wkt': asset['full_geom']
-            # c})
+            etree.SubElement(anode, 'geometry').text = \
+                asset['full_geom']
         _handle_costs(anode, cursor, asset, ctd)
         _handle_occupancy(anode, cursor, asset)
         _handle_tags(anode, cursor, asset)

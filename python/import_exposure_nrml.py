@@ -32,8 +32,7 @@ from django.conf import settings
 import db_settings
 settings.configure(DATABASES=db_settings.DATABASES)
 
-VERBOSE = True
-# False
+VERBOSE = False
 
 
 def verbose_message(msg):
@@ -252,8 +251,6 @@ def _import_assets(cursor, ex, ctd, model_id):
             ])
 
         for tag_name, tag_value in _get_tags(asset).items():
-            verbose_message('Tags: {0}={1}\n'.format(
-                tag_name, tag_value))
             cursor.execute(TAGS_QUERY, [
                 tag_name,
                 tag_value,
