@@ -32,8 +32,7 @@ from django.conf import settings
 import db_settings
 settings.configure(DATABASES=db_settings.DATABASES)
 
-# VERBOSE = False
-VERBOSE = True
+VERBOSE = False
 
 
 def verbose_message(msg):
