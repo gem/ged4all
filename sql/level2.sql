@@ -266,6 +266,25 @@ CREATE TABLE tags (
 
 
 --
+-- Name: tags_id_seq; Type: SEQUENCE; Schema: level2; Owner: -
+--
+
+CREATE SEQUENCE tags_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: tags_id_seq; Type: SEQUENCE OWNED BY; Schema: level2; Owner: -
+--
+
+ALTER SEQUENCE tags_id_seq OWNED BY tags.id;
+
+
+--
 -- Name: id; Type: DEFAULT; Schema: level2; Owner: -
 --
 
@@ -305,6 +324,13 @@ ALTER TABLE ONLY model_cost_type ALTER COLUMN id SET DEFAULT nextval('model_cost
 --
 
 ALTER TABLE ONLY occupancy ALTER COLUMN id SET DEFAULT nextval('occupancy_id_seq'::regclass);
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: level2; Owner: -
+--
+
+ALTER TABLE ONLY tags ALTER COLUMN id SET DEFAULT nextval('tags_id_seq'::regclass);
 
 
 SET default_tablespace = '';
