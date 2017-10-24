@@ -59,12 +59,22 @@ def _get_area(ex):
     return area_type, area_unit
 
 
+def _get_tag_names(ex):
+    """
+    Return the content of the tagNames tag or None if not found
+    """
+    try:
+        return ex.tagNames.text
+    except Exception:
+        return None
+
+
 MODEL_QUERY = """
 INSERT INTO level2.exposure_model (
     name, description, taxonomy_source,
-    category, area_type, area_unit
+    category, area_type, area_unit, tag_names
 )
-VALUES (%s,%s,%s,%s,%s,%s)
+VALUES (%s,%s,%s,%s,%s,%s,%s)
 RETURNING id
 """
 
@@ -80,7 +90,8 @@ def _import_model(cursor, ex):
         ex.attrib.get('taxonomySource'),
         ex.attrib.get('category'),
         area[0],
-        area[1]
+        area[1],
+        _get_tag_names(ex)
     ])
     return cursor.fetchone()[0]
 
@@ -118,11 +129,25 @@ def _import_cost_types(cursor, ex, model_id):
         type_ids[cost_name] = cost_type_id
     return type_ids
 
+
+def _get_full_geom(asset):
+    """
+    Return the WKT geometry string or None if not present
+    """
+    try:
+        return asset.geometry.text
+    except Exception:
+        # Ignore exception - optional node
+        return None
+
 ASSET_QUERY = """
 INSERT INTO level2.asset (
-  exposure_model_id,asset_ref,taxonomy,number_of_units,area,the_geom)
+  exposure_model_id,asset_ref,taxonomy,number_of_units,area,
+  the_geom,full_geom)
 VALUES (
- %s,%s,%s,%s,%s,ST_SetSRID(ST_MakePoint(%s,%s),4326)
+ %s,%s,%s,%s,%s,
+ ST_SetSRID(ST_MakePoint(%s,%s),4326),
+ ST_GeomFromText(%s, 4326)
 )
 RETURNING id"""
 
@@ -138,16 +163,35 @@ def _import_asset(cursor, asset, model_id):
         asset.attrib.get('taxonomy'),
         asset.attrib.get('number'),
         asset.attrib.get('area'),
-        loc['lon'], loc['lat']
+        loc['lon'], loc['lat'],
+        _get_full_geom(asset)
     ])
     return cursor.fetchone()[0]
 
-COST_QUERY = """INSERT INTO level2.cost (cost_type_id, value, asset_id)
-VALUES (%s,%s,%s)"""
+COST_QUERY = """INSERT INTO level2.cost (
+    cost_type_id, value, deductible, insurance_limit, asset_id)
+VALUES (%s,%s,%s,%s,%s)"""
 
 OCC_QUERY = """INSERT INTO level2.occupancy (
     period, occupants, asset_id)
 VALUES (%s,%s,%s)"""
+
+TAGS_QUERY = """INSERT INTO level2.tags (
+    name, value, asset_id)
+VALUES (%s,%s,%s)"""
+
+
+def _get_tags(asset):
+    """
+    Get tag dictionary, empty if not present
+    """
+    tags = {}
+    try:
+        tags = asset.tags.attrib
+    except Exception:
+        # ignore errors
+        pass
+    return tags
 
 
 def _get_occupancies(asset):
@@ -194,6 +238,8 @@ def _import_assets(cursor, ex, ctd, model_id):
             cursor.execute(COST_QUERY, [
                 ctd[cost['type']],
                 cost['value'],
+                cost['deductible'],
+                cost['insuranceLimit'],
                 asset_id
             ])
 
@@ -201,6 +247,13 @@ def _import_assets(cursor, ex, ctd, model_id):
             cursor.execute(OCC_QUERY, [
                 occ.attrib.get('period'),
                 occ['occupants'],
+                asset_id
+            ])
+
+        for tag_name, tag_value in _get_tags(asset).items():
+            cursor.execute(TAGS_QUERY, [
+                tag_name,
+                tag_value,
                 asset_id
             ])
 

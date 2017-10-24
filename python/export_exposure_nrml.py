@@ -34,7 +34,7 @@ from django.conf import settings
 import db_settings
 settings.configure(DATABASES=db_settings.DATABASES)
 
-VERBOSE = True
+VERBOSE = False
 
 
 def verbose_message(msg):
@@ -71,7 +71,8 @@ SELECT * FROM level2.model_cost_type WHERE exposure_model_id=%s
 
 ASSET_QUERY = """
 SELECT id, exposure_model_id, asset_ref, taxonomy, number_of_units, area,
-       ST_Y(the_geom) AS lat, ST_X(the_geom) AS lon
+       ST_Y(the_geom) AS lat, ST_X(the_geom) AS lon,
+       ST_AsText(full_geom) AS full_geom
   FROM level2.asset
  WHERE exposure_model_id=%s
  ORDER BY id
@@ -83,6 +84,10 @@ SELECT * FROM level2.cost WHERE asset_id=%s
 
 OCC_QUERY = """
 SELECT * FROM level2.occupancy WHERE asset_id=%s
+"""
+
+TAGS_QUERY = """
+SELECT * FROM level2.tags WHERE asset_id=%s
 """
 
 
@@ -102,41 +107,59 @@ def _handle_cost_types(cursor, model_id, conv):
 
 
 def _handle_costs(anode, cursor, asset, ctd):
-    costs_node = etree.SubElement(anode, 'costs')
     cursor.execute(COST_QUERY, [asset['id']])
     cost_rows = dictfetchall(cursor)
-    for cost in cost_rows:
-        etree.SubElement(costs_node, 'cost', {
-            'type': ctd[cost['cost_type_id']],
-            'value': '{:.5F}'.format(cost['value'])
-        })
+    if cost_rows:
+        costs_node = etree.SubElement(anode, 'costs')
+        for cost in cost_rows:
+            attr = {
+                'type': ctd[cost['cost_type_id']],
+                'value': '{:.5F}'.format(cost['value'])
+            }
+            if cost['deductible'] is not None:
+                attr['deductible'] = '{:.5F}'.format(cost['deductible'])
+            if cost['insurance_limit'] is not None:
+                attr['insuranceLimit'] = '{:.5F}'.format(
+                    cost['insurance_limit'])
+            etree.SubElement(costs_node, 'cost', attr)
 
 
 def _handle_occupancy(anode, cursor, asset):
-    occs_node = etree.SubElement(anode, 'occupancies')
     cursor.execute(OCC_QUERY, [asset['id']])
     occ_rows = dictfetchall(cursor)
-    for occ in occ_rows:
-        etree.SubElement(occs_node, 'occupancy', {
-            'period': occ['period'],
-            'occupants': '{:g}'.format(occ['occupants'])
-        })
+    if occ_rows:
+        occs_node = etree.SubElement(anode, 'occupancies')
+        for occ in occ_rows:
+            etree.SubElement(occs_node, 'occupancy', {
+                'period': occ['period'],
+                'occupants': '{:g}'.format(occ['occupants'])
+            })
+
+
+def _handle_tags(anode, cursor, asset):
+    cursor.execute(TAGS_QUERY, [asset['id']])
+    tag_rows = dictfetchall(cursor)
+    if tag_rows:
+        tags_node = etree.SubElement(anode, 'tags')
+        for tag in tag_rows:
+            tags_node.attrib[tag['name']] = tag['value']
 
 
 def _build_tree(model_id, model_dict, cursor):
-    # print(ed)
     nrml = etree.Element(
         'nrml', {'xmlns': 'http://openquake.org/xmlns/nrml/0.5'})
-    exm = etree.SubElement(
-        nrml, 'exposureModel', {
+    em_dict = {
             'id': model_dict['name'],
             'category': model_dict['category'],
             'taxonomySource': model_dict['taxonomy_source']
-        })
-
-    descr = etree.SubElement(exm, 'description')
-    descr.text = model_dict['description']
+    }
+    exm = etree.SubElement(nrml, 'exposureModel', em_dict)
+    etree.SubElement(exm, 'description').text = \
+        model_dict['description']
     conv = etree.SubElement(exm, 'conversions')
+    if model_dict['tag_names'] is not None:
+        etree.SubElement(exm, 'tagNames').text = \
+            model_dict['tag_names']
     if model_dict['area_type'] is not None:
         etree.SubElement(conv, 'area', {
             'type': model_dict['area_type'],
@@ -160,9 +183,12 @@ def _build_tree(model_id, model_dict, cursor):
             'lon': '{:g}'.format(asset['lon']),
             'lat': '{:g}'.format(asset['lat'])
         })
+        if asset['full_geom'] is not None:
+            etree.SubElement(anode, 'geometry').text = \
+                asset['full_geom']
         _handle_costs(anode, cursor, asset, ctd)
         _handle_occupancy(anode, cursor, asset)
-
+        _handle_tags(anode, cursor, asset)
     return nrml
 
 

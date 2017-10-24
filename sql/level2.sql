@@ -1,163 +1,116 @@
 --
--- EXPERIMENTAL Schema for GED4ALL database 
--- Based on but not identical to GED4GEM level2 (not derived from population) 
--- schema which in turn is based on OpenQuake NRML exposure model
+-- PostgreSQL database dump
 --
+
+-- Dumped from database version 9.5.8
+-- Dumped by pg_dump version 9.5.8
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
 SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SET check_function_bodies = false;
+SET client_min_messages = warning;
+SET row_security = off;
 
 --
--- TODO rename schemas and tablespaces for GED4ALL, level nomenclature not 
--- really appropriate
+-- Name: level2; Type: SCHEMA; Schema: -; Owner: -
 --
+
 CREATE SCHEMA level2;
-ALTER SCHEMA level2 OWNER TO ged4all_owner;
+
 
 SET search_path = level2, pg_catalog;
-SET default_tablespace = ged4all_ts;
+
+SET default_tablespace = ged2_ts;
+
+SET default_with_oids = false;
 
 --
--- Exposure model - a collection of Asset with associated cost types and 
--- taxonomy system
+-- Name: asset; Type: TABLE; Schema: level2; Owner: -; Tablespace: ged2_ts
 --
-CREATE TABLE exposure_model (
-    id integer NOT NULL,
-    name character varying NOT NULL,
-    description character varying,
-    taxonomy_source character varying,
-    category character varying NOT NULL,
-    area_type character varying,
-    area_unit character varying,
-    CONSTRAINT area_type_value CHECK ((
-		(area_type IS NULL) OR 
-		((area_type)::text = 'per_asset'::text) OR 
-		((area_type)::text = 'aggregated'::text)
-	))
-);
 
---
--- Meta-data for contributed exposure model 
--- TODO update import/export code to use this table
--- TODO add optional URL field
---
-CREATE TABLE contribution (
+CREATE TABLE asset (
     id integer NOT NULL,
     exposure_model_id integer NOT NULL,
-    model_source character varying NOT NULL,
-    model_date character varying NOT NULL,
-    notes text
+    asset_ref character varying NOT NULL,
+    taxonomy character varying NOT NULL,
+    number_of_units double precision,
+    area double precision,
+    the_geom public.geometry(Point,4326) NOT NULL,
+    full_geom public.geometry(Geometry,4326),
+    CONSTRAINT area_value CHECK ((area >= (0.0)::double precision)),
+    CONSTRAINT units_value CHECK ((number_of_units >= (0.0)::double precision))
 );
-ALTER TABLE ONLY contribution
-    ADD CONSTRAINT contribution_exposure_model_id_fkey 
-		FOREIGN KEY (exposure_model_id) 
-		REFERENCES exposure_model(id) ON DELETE CASCADE;
+
 
 --
--- Cost types for Assets in a given model 
--- cost type name is user defined examples include "structural", "contents", 
--- "business interruption"... 
--- aggregation type is one of: per_asset / per_area / aggregated
--- unit is typically a currency ISO code such as USD or EUR
+-- Name: cost; Type: TABLE; Schema: level2; Owner: -; Tablespace: ged2_ts
 --
+
+CREATE TABLE cost (
+    id integer NOT NULL,
+    asset_id integer NOT NULL,
+    cost_type_id integer NOT NULL,
+    value double precision NOT NULL,
+    deductible double precision,
+    insurance_limit double precision,
+    CONSTRAINT converted_cost_value CHECK ((value >= (0.0)::double precision))
+);
+
+
 --
+-- Name: model_cost_type; Type: TABLE; Schema: level2; Owner: -; Tablespace: ged2_ts
+--
+
 CREATE TABLE model_cost_type (
     id integer NOT NULL,
     exposure_model_id integer NOT NULL,
     cost_type_name character varying NOT NULL,
     aggregation_type character varying NOT NULL,
     unit character varying,
-    CONSTRAINT aggregation_type_value CHECK ((
-		((aggregation_type)::text = 'per_asset'::text) OR 
-		((aggregation_type)::text = 'per_area'::text) OR 
-		((aggregation_type)::text = 'aggregated'::text)
-	))
+    CONSTRAINT aggregation_type_value CHECK ((((aggregation_type)::text = 'per_asset'::text) OR ((aggregation_type)::text = 'per_area'::text) OR ((aggregation_type)::text = 'aggregated'::text)))
 );
-ALTER TABLE ONLY model_cost_type
-    ADD CONSTRAINT model_cost_type_exposure_model_id_fk 
-		FOREIGN KEY (exposure_model_id) 
-		REFERENCES exposure_model(id) ON DELETE CASCADE;
+
 
 --
--- Asset - an item of value (building, aggregated collection of buildings, 
---         structure, field etc.)
+-- Name: occupancy; Type: TABLE; Schema: level2; Owner: -; Tablespace: ged2_ts
 --
--- TODO - add support for optional NRML 'tag' tags (coming soon) 
--- TODO - add support for optional arbitrary geometry (in addition to point; 
---        for example footprints/areas/networks )
--- TODO - add support for optional external reference (Census track number, 
---        CRESTA id, HASC code...) 
---        maybe we can use NRML 'tag' tags for all optional data
---
-CREATE TABLE asset (
-    id integer NOT NULL,
-    exposure_model_id integer NOT NULL,
-    asset_ref character varying,
-    taxonomy character varying NOT NULL,
-    number_of_units double precision,
-    area double precision,
-    the_geom public.geometry(Point,4326) NOT NULL,
-    CONSTRAINT area_value CHECK ((area >= (0.0)::double precision)),
-    CONSTRAINT units_value CHECK ((number_of_units >= (0.0)::double precision))
-);
--- Delete asset when parent exposure model is deleted
-ALTER TABLE ONLY asset
-    ADD CONSTRAINT asset_exposure_model_id_fk FOREIGN KEY (exposure_model_id) 
-		REFERENCES exposure_model(id) ON DELETE CASCADE;
-ALTER TABLE ONLY asset
-    ADD CONSTRAINT asset_exposure_model_id_asset_ref_key 
-		UNIQUE (exposure_model_id, asset_ref);
 
---
--- Cost of a specified Asset, refers to model_cost_type
---
-CREATE TABLE cost (
-    id integer NOT NULL,
-    asset_id integer NOT NULL,
-    cost_type_id integer NOT NULL,
-    value double precision NOT NULL,
-    CONSTRAINT converted_cost_value CHECK ((value >= (0.0)::double precision))
-);
-ALTER TABLE ONLY cost
-    ADD CONSTRAINT cost_asset_id_fk FOREIGN KEY (asset_id) 
-		REFERENCES asset(id) ON DELETE CASCADE;
-ALTER TABLE ONLY cost
-    ADD CONSTRAINT cost_cost_type_id_fkey FOREIGN KEY (cost_type_id) 
-		REFERENCES model_cost_type(id);
---
--- Occupancy of a given Asset
---
 CREATE TABLE occupancy (
     id integer NOT NULL,
     asset_id integer NOT NULL,
     period character varying NOT NULL,
     occupants double precision NOT NULL
 );
-ALTER TABLE ONLY occupancy
-    ADD CONSTRAINT occupancy_asset_id_fk FOREIGN KEY (asset_id) 
-	REFERENCES asset(id) ON DELETE CASCADE;
-
---
--- Indices - it is particularly important to be able to locate assets by
--- exposure_model_id in order to perform ON DELETE CASCADE in reasonable time
---
-CREATE INDEX asset_exposure_model_id_idx ON asset 
-	USING btree (exposure_model_id);
-
-CREATE INDEX cost_asset_id_idx ON cost USING btree (asset_id);
-
-CREATE INDEX occupancy_asset_id_idx ON occupancy USING btree (asset_id);
-
-CREATE INDEX asset_the_geom_gist ON asset USING GIST(the_geom);
 
 
 --
--- End of data-model 
+-- Name: all_exposure; Type: VIEW; Schema: level2; Owner: -
 --
---
-ALTER TABLE exposure_model OWNER TO ged4all_owner;
-ALTER TABLE asset OWNER TO ged4all_owner;
+
+CREATE VIEW all_exposure AS
+ SELECT a.asset_ref,
+    a.taxonomy,
+    a.number_of_units,
+    a.area,
+    a.exposure_model_id,
+    occ.period,
+    occ.occupants,
+    c.value,
+    mct.cost_type_name,
+    mct.aggregation_type,
+    mct.unit,
+    public.st_x(a.the_geom) AS lon,
+    public.st_y(a.the_geom) AS lat
+   FROM (((asset a
+     LEFT JOIN cost c ON ((c.asset_id = a.id)))
+     LEFT JOIN model_cost_type mct ON ((mct.id = c.cost_type_id)))
+     LEFT JOIN occupancy occ ON ((occ.asset_id = a.id)));
+
 
 --
--- Name: asset_id_seq; Type: SEQUENCE; Schema: level2; Owner: ged4all_owner
+-- Name: asset_id_seq; Type: SEQUENCE; Schema: level2; Owner: -
 --
 
 CREATE SEQUENCE asset_id_seq
@@ -168,21 +121,28 @@ CREATE SEQUENCE asset_id_seq
     CACHE 1;
 
 
-ALTER TABLE asset_id_seq OWNER TO ged4all_owner;
-
 --
--- Name: asset_id_seq; Type: SEQUENCE OWNED BY; Schema: level2; Owner: ged4all_owner
+-- Name: asset_id_seq; Type: SEQUENCE OWNED BY; Schema: level2; Owner: -
 --
 
 ALTER SEQUENCE asset_id_seq OWNED BY asset.id;
 
 
+--
+-- Name: contribution; Type: TABLE; Schema: level2; Owner: -; Tablespace: ged2_ts
+--
 
+CREATE TABLE contribution (
+    id integer NOT NULL,
+    exposure_model_id integer NOT NULL,
+    model_source character varying NOT NULL,
+    model_date character varying NOT NULL,
+    notes text
+);
 
-ALTER TABLE contribution OWNER TO ged4all_owner;
 
 --
--- Name: contribution_id_seq; Type: SEQUENCE; Schema: level2; Owner: ged4all_owner
+-- Name: contribution_id_seq; Type: SEQUENCE; Schema: level2; Owner: -
 --
 
 CREATE SEQUENCE contribution_id_seq
@@ -193,21 +153,15 @@ CREATE SEQUENCE contribution_id_seq
     CACHE 1;
 
 
-ALTER TABLE contribution_id_seq OWNER TO ged4all_owner;
-
 --
--- Name: contribution_id_seq; Type: SEQUENCE OWNED BY; Schema: level2; Owner: ged4all_owner
+-- Name: contribution_id_seq; Type: SEQUENCE OWNED BY; Schema: level2; Owner: -
 --
 
 ALTER SEQUENCE contribution_id_seq OWNED BY contribution.id;
 
 
-
-
-ALTER TABLE cost OWNER TO ged4all_owner;
-
 --
--- Name: cost_id_seq; Type: SEQUENCE; Schema: level2; Owner: ged4all_owner
+-- Name: cost_id_seq; Type: SEQUENCE; Schema: level2; Owner: -
 --
 
 CREATE SEQUENCE cost_id_seq
@@ -218,18 +172,32 @@ CREATE SEQUENCE cost_id_seq
     CACHE 1;
 
 
-ALTER TABLE cost_id_seq OWNER TO ged4all_owner;
-
 --
--- Name: cost_id_seq; Type: SEQUENCE OWNED BY; Schema: level2; Owner: ged4all_owner
+-- Name: cost_id_seq; Type: SEQUENCE OWNED BY; Schema: level2; Owner: -
 --
 
 ALTER SEQUENCE cost_id_seq OWNED BY cost.id;
 
 
+--
+-- Name: exposure_model; Type: TABLE; Schema: level2; Owner: -; Tablespace: ged2_ts
+--
+
+CREATE TABLE exposure_model (
+    id integer NOT NULL,
+    name character varying NOT NULL,
+    description character varying,
+    taxonomy_source character varying,
+    category character varying NOT NULL,
+    area_type character varying,
+    area_unit character varying,
+    tag_names character varying,
+    CONSTRAINT area_type_value CHECK (((area_type IS NULL) OR ((area_type)::text = 'per_asset'::text) OR ((area_type)::text = 'aggregated'::text)))
+);
+
 
 --
--- Name: exposure_model_id_seq; Type: SEQUENCE; Schema: level2; Owner: ged4all_owner
+-- Name: exposure_model_id_seq; Type: SEQUENCE; Schema: level2; Owner: -
 --
 
 CREATE SEQUENCE exposure_model_id_seq
@@ -240,21 +208,15 @@ CREATE SEQUENCE exposure_model_id_seq
     CACHE 1;
 
 
-ALTER TABLE exposure_model_id_seq OWNER TO ged4all_owner;
-
 --
--- Name: exposure_model_id_seq; Type: SEQUENCE OWNED BY; Schema: level2; Owner: ged4all_owner
+-- Name: exposure_model_id_seq; Type: SEQUENCE OWNED BY; Schema: level2; Owner: -
 --
 
 ALTER SEQUENCE exposure_model_id_seq OWNED BY exposure_model.id;
 
 
-
-
-ALTER TABLE model_cost_type OWNER TO ged4all_owner;
-
 --
--- Name: model_cost_type_id_seq; Type: SEQUENCE; Schema: level2; Owner: ged4all_owner
+-- Name: model_cost_type_id_seq; Type: SEQUENCE; Schema: level2; Owner: -
 --
 
 CREATE SEQUENCE model_cost_type_id_seq
@@ -265,21 +227,15 @@ CREATE SEQUENCE model_cost_type_id_seq
     CACHE 1;
 
 
-ALTER TABLE model_cost_type_id_seq OWNER TO ged4all_owner;
-
 --
--- Name: model_cost_type_id_seq; Type: SEQUENCE OWNED BY; Schema: level2; Owner: ged4all_owner
+-- Name: model_cost_type_id_seq; Type: SEQUENCE OWNED BY; Schema: level2; Owner: -
 --
 
 ALTER SEQUENCE model_cost_type_id_seq OWNED BY model_cost_type.id;
 
 
-
-
-ALTER TABLE occupancy OWNER TO ged4all_owner;
-
 --
--- Name: occupancy_id_seq; Type: SEQUENCE; Schema: level2; Owner: ged4all_owner
+-- Name: occupancy_id_seq; Type: SEQUENCE; Schema: level2; Owner: -
 --
 
 CREATE SEQUENCE occupancy_id_seq
@@ -290,67 +246,105 @@ CREATE SEQUENCE occupancy_id_seq
     CACHE 1;
 
 
-ALTER TABLE occupancy_id_seq OWNER TO ged4all_owner;
-
 --
--- Name: occupancy_id_seq; Type: SEQUENCE OWNED BY; Schema: level2; Owner: ged4all_owner
+-- Name: occupancy_id_seq; Type: SEQUENCE OWNED BY; Schema: level2; Owner: -
 --
 
 ALTER SEQUENCE occupancy_id_seq OWNED BY occupancy.id;
 
 
 --
--- Name: id; Type: DEFAULT; Schema: level2; Owner: ged4all_owner
+-- Name: tags; Type: TABLE; Schema: level2; Owner: -; Tablespace: ged2_ts
+--
+
+CREATE TABLE tags (
+    id integer NOT NULL,
+    asset_id integer NOT NULL,
+    name character varying NOT NULL,
+    value character varying NOT NULL
+);
+
+
+--
+-- Name: tags_id_seq; Type: SEQUENCE; Schema: level2; Owner: -
+--
+
+CREATE SEQUENCE tags_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: tags_id_seq; Type: SEQUENCE OWNED BY; Schema: level2; Owner: -
+--
+
+ALTER SEQUENCE tags_id_seq OWNED BY tags.id;
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: level2; Owner: -
 --
 
 ALTER TABLE ONLY asset ALTER COLUMN id SET DEFAULT nextval('asset_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: level2; Owner: ged4all_owner
+-- Name: id; Type: DEFAULT; Schema: level2; Owner: -
 --
 
 ALTER TABLE ONLY contribution ALTER COLUMN id SET DEFAULT nextval('contribution_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: level2; Owner: ged4all_owner
+-- Name: id; Type: DEFAULT; Schema: level2; Owner: -
 --
 
 ALTER TABLE ONLY cost ALTER COLUMN id SET DEFAULT nextval('cost_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: level2; Owner: ged4all_owner
+-- Name: id; Type: DEFAULT; Schema: level2; Owner: -
 --
 
 ALTER TABLE ONLY exposure_model ALTER COLUMN id SET DEFAULT nextval('exposure_model_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: level2; Owner: ged4all_owner
+-- Name: id; Type: DEFAULT; Schema: level2; Owner: -
 --
 
 ALTER TABLE ONLY model_cost_type ALTER COLUMN id SET DEFAULT nextval('model_cost_type_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: level2; Owner: ged4all_owner
+-- Name: id; Type: DEFAULT; Schema: level2; Owner: -
 --
 
 ALTER TABLE ONLY occupancy ALTER COLUMN id SET DEFAULT nextval('occupancy_id_seq'::regclass);
 
 
+--
+-- Name: id; Type: DEFAULT; Schema: level2; Owner: -
+--
+
+ALTER TABLE ONLY tags ALTER COLUMN id SET DEFAULT nextval('tags_id_seq'::regclass);
+
+
 SET default_tablespace = '';
 
 --
--- Name: asset_exposure_model_id_asset_ref_key; Type: CONSTRAINT; Schema: level2; Owner: ged4all_owner
+-- Name: asset_exposure_model_id_asset_ref_key; Type: CONSTRAINT; Schema: level2; Owner: -
 --
 
+ALTER TABLE ONLY asset
+    ADD CONSTRAINT asset_exposure_model_id_asset_ref_key UNIQUE (exposure_model_id, asset_ref);
 
 
 --
--- Name: asset_pkey; Type: CONSTRAINT; Schema: level2; Owner: ged4all_owner
+-- Name: asset_pkey; Type: CONSTRAINT; Schema: level2; Owner: -
 --
 
 ALTER TABLE ONLY asset
@@ -358,7 +352,7 @@ ALTER TABLE ONLY asset
 
 
 --
--- Name: contribution_pkey; Type: CONSTRAINT; Schema: level2; Owner: ged4all_owner
+-- Name: contribution_pkey; Type: CONSTRAINT; Schema: level2; Owner: -
 --
 
 ALTER TABLE ONLY contribution
@@ -366,7 +360,7 @@ ALTER TABLE ONLY contribution
 
 
 --
--- Name: cost_asset_id_cost_type_id_key; Type: CONSTRAINT; Schema: level2; Owner: ged4all_owner
+-- Name: cost_asset_id_cost_type_id_key; Type: CONSTRAINT; Schema: level2; Owner: -
 --
 
 ALTER TABLE ONLY cost
@@ -374,7 +368,7 @@ ALTER TABLE ONLY cost
 
 
 --
--- Name: cost_pkey; Type: CONSTRAINT; Schema: level2; Owner: ged4all_owner
+-- Name: cost_pkey; Type: CONSTRAINT; Schema: level2; Owner: -
 --
 
 ALTER TABLE ONLY cost
@@ -382,7 +376,7 @@ ALTER TABLE ONLY cost
 
 
 --
--- Name: exposure_model_pkey; Type: CONSTRAINT; Schema: level2; Owner: ged4all_owner
+-- Name: exposure_model_pkey; Type: CONSTRAINT; Schema: level2; Owner: -
 --
 
 ALTER TABLE ONLY exposure_model
@@ -390,7 +384,7 @@ ALTER TABLE ONLY exposure_model
 
 
 --
--- Name: model_cost_type_pkey; Type: CONSTRAINT; Schema: level2; Owner: ged4all_owner
+-- Name: model_cost_type_pkey; Type: CONSTRAINT; Schema: level2; Owner: -
 --
 
 ALTER TABLE ONLY model_cost_type
@@ -398,162 +392,121 @@ ALTER TABLE ONLY model_cost_type
 
 
 --
--- Name: occupancy_pkey; Type: CONSTRAINT; Schema: level2; Owner: ged4all_owner
+-- Name: occupancy_pkey; Type: CONSTRAINT; Schema: level2; Owner: -
 --
 
 ALTER TABLE ONLY occupancy
     ADD CONSTRAINT occupancy_pkey PRIMARY KEY (id);
 
 
+SET default_tablespace = ged2_ts;
 
+--
+-- Name: tags_pkey; Type: CONSTRAINT; Schema: level2; Owner: -; Tablespace: ged2_ts
+--
+
+ALTER TABLE ONLY tags
+    ADD CONSTRAINT tags_pkey PRIMARY KEY (id);
+
+
+SET default_tablespace = '';
+
+--
+-- Name: asset_exposure_model_id_idx; Type: INDEX; Schema: level2; Owner: -
+--
+
+CREATE INDEX asset_exposure_model_id_idx ON asset USING btree (exposure_model_id);
 
 
 --
--- Name: level2; Type: ACL; Schema: -; Owner: ged4all_owner
+-- Name: asset_full_geom_idx; Type: INDEX; Schema: level2; Owner: -
 --
 
-REVOKE ALL ON SCHEMA level2 FROM PUBLIC;
-REVOKE ALL ON SCHEMA level2 FROM ged4all_owner;
-GRANT ALL ON SCHEMA level2 TO ged4all_owner;
-GRANT USAGE ON SCHEMA level2 TO gedusers;
+CREATE INDEX asset_full_geom_idx ON asset USING gist (full_geom);
 
 
 --
--- Name: asset; Type: ACL; Schema: level2; Owner: ged4all_owner
+-- Name: asset_the_geom_gist; Type: INDEX; Schema: level2; Owner: -
 --
 
-REVOKE ALL ON TABLE asset FROM PUBLIC;
-REVOKE ALL ON TABLE asset FROM ged4all_owner;
-GRANT ALL ON TABLE asset TO ged4all_owner;
-GRANT ALL ON TABLE asset TO ged2admin;
-GRANT SELECT ON TABLE asset TO gedusers;
-GRANT ALL ON TABLE asset TO contributor;
+CREATE INDEX asset_the_geom_gist ON asset USING gist (the_geom);
 
 
 --
--- Name: asset_id_seq; Type: ACL; Schema: level2; Owner: ged4all_owner
+-- Name: cost_asset_id_idx; Type: INDEX; Schema: level2; Owner: -
 --
 
-REVOKE ALL ON SEQUENCE asset_id_seq FROM PUBLIC;
-REVOKE ALL ON SEQUENCE asset_id_seq FROM ged4all_owner;
-GRANT ALL ON SEQUENCE asset_id_seq TO ged4all_owner;
-GRANT ALL ON SEQUENCE asset_id_seq TO ged2admin;
-GRANT SELECT,USAGE ON SEQUENCE asset_id_seq TO gedusers;
+CREATE INDEX cost_asset_id_idx ON cost USING btree (asset_id);
 
 
 --
--- Name: contribution; Type: ACL; Schema: level2; Owner: ged4all_owner
+-- Name: occupancy_asset_id_idx; Type: INDEX; Schema: level2; Owner: -
 --
 
-REVOKE ALL ON TABLE contribution FROM PUBLIC;
-REVOKE ALL ON TABLE contribution FROM ged4all_owner;
-GRANT ALL ON TABLE contribution TO ged4all_owner;
-GRANT ALL ON TABLE contribution TO ged2admin;
-GRANT SELECT ON TABLE contribution TO gedusers;
-GRANT ALL ON TABLE contribution TO contributor;
+CREATE INDEX occupancy_asset_id_idx ON occupancy USING btree (asset_id);
 
 
 --
--- Name: contribution_id_seq; Type: ACL; Schema: level2; Owner: ged4all_owner
+-- Name: tags_asset_id_idx; Type: INDEX; Schema: level2; Owner: -
 --
 
-REVOKE ALL ON SEQUENCE contribution_id_seq FROM PUBLIC;
-REVOKE ALL ON SEQUENCE contribution_id_seq FROM ged4all_owner;
-GRANT ALL ON SEQUENCE contribution_id_seq TO ged4all_owner;
-GRANT ALL ON SEQUENCE contribution_id_seq TO ged2admin;
-GRANT SELECT,USAGE ON SEQUENCE contribution_id_seq TO gedusers;
+CREATE INDEX tags_asset_id_idx ON tags USING btree (asset_id);
 
 
 --
--- Name: cost; Type: ACL; Schema: level2; Owner: ged4all_owner
+-- Name: asset_exposure_model_id_fk; Type: FK CONSTRAINT; Schema: level2; Owner: -
 --
 
-REVOKE ALL ON TABLE cost FROM PUBLIC;
-REVOKE ALL ON TABLE cost FROM ged4all_owner;
-GRANT ALL ON TABLE cost TO ged4all_owner;
-GRANT ALL ON TABLE cost TO ged2admin;
-GRANT SELECT ON TABLE cost TO gedusers;
-GRANT ALL ON TABLE cost TO contributor;
+ALTER TABLE ONLY asset
+    ADD CONSTRAINT asset_exposure_model_id_fk FOREIGN KEY (exposure_model_id) REFERENCES exposure_model(id) ON DELETE CASCADE;
 
 
 --
--- Name: cost_id_seq; Type: ACL; Schema: level2; Owner: ged4all_owner
+-- Name: contribution_exposure_model_id_fkey; Type: FK CONSTRAINT; Schema: level2; Owner: -
 --
 
-REVOKE ALL ON SEQUENCE cost_id_seq FROM PUBLIC;
-REVOKE ALL ON SEQUENCE cost_id_seq FROM ged4all_owner;
-GRANT ALL ON SEQUENCE cost_id_seq TO ged4all_owner;
-GRANT ALL ON SEQUENCE cost_id_seq TO ged2admin;
-GRANT SELECT,USAGE ON SEQUENCE cost_id_seq TO gedusers;
+ALTER TABLE ONLY contribution
+    ADD CONSTRAINT contribution_exposure_model_id_fkey FOREIGN KEY (exposure_model_id) REFERENCES exposure_model(id);
 
 
 --
--- Name: exposure_model; Type: ACL; Schema: level2; Owner: ged4all_owner
+-- Name: cost_asset_id_fk; Type: FK CONSTRAINT; Schema: level2; Owner: -
 --
 
-REVOKE ALL ON TABLE exposure_model FROM PUBLIC;
-REVOKE ALL ON TABLE exposure_model FROM ged4all_owner;
-GRANT ALL ON TABLE exposure_model TO ged4all_owner;
-GRANT ALL ON TABLE exposure_model TO ged2admin;
-GRANT SELECT ON TABLE exposure_model TO gedusers;
-GRANT ALL ON TABLE exposure_model TO contributor;
+ALTER TABLE ONLY cost
+    ADD CONSTRAINT cost_asset_id_fk FOREIGN KEY (asset_id) REFERENCES asset(id) ON DELETE CASCADE;
 
 
 --
--- Name: exposure_model_id_seq; Type: ACL; Schema: level2; Owner: ged4all_owner
+-- Name: cost_cost_type_id_fkey; Type: FK CONSTRAINT; Schema: level2; Owner: -
 --
 
-REVOKE ALL ON SEQUENCE exposure_model_id_seq FROM PUBLIC;
-REVOKE ALL ON SEQUENCE exposure_model_id_seq FROM ged4all_owner;
-GRANT ALL ON SEQUENCE exposure_model_id_seq TO ged4all_owner;
-GRANT ALL ON SEQUENCE exposure_model_id_seq TO ged2admin;
-GRANT SELECT,USAGE ON SEQUENCE exposure_model_id_seq TO gedusers;
+ALTER TABLE ONLY cost
+    ADD CONSTRAINT cost_cost_type_id_fkey FOREIGN KEY (cost_type_id) REFERENCES model_cost_type(id);
 
 
 --
--- Name: model_cost_type; Type: ACL; Schema: level2; Owner: ged4all_owner
+-- Name: model_cost_type_exposure_model_id_fk; Type: FK CONSTRAINT; Schema: level2; Owner: -
 --
 
-REVOKE ALL ON TABLE model_cost_type FROM PUBLIC;
-REVOKE ALL ON TABLE model_cost_type FROM ged4all_owner;
-GRANT ALL ON TABLE model_cost_type TO ged4all_owner;
-GRANT ALL ON TABLE model_cost_type TO ged2admin;
-GRANT SELECT ON TABLE model_cost_type TO gedusers;
-GRANT ALL ON TABLE model_cost_type TO contributor;
+ALTER TABLE ONLY model_cost_type
+    ADD CONSTRAINT model_cost_type_exposure_model_id_fk FOREIGN KEY (exposure_model_id) REFERENCES exposure_model(id) ON DELETE CASCADE;
 
 
 --
--- Name: model_cost_type_id_seq; Type: ACL; Schema: level2; Owner: ged4all_owner
+-- Name: occupancy_asset_id_fk; Type: FK CONSTRAINT; Schema: level2; Owner: -
 --
 
-REVOKE ALL ON SEQUENCE model_cost_type_id_seq FROM PUBLIC;
-REVOKE ALL ON SEQUENCE model_cost_type_id_seq FROM ged4all_owner;
-GRANT ALL ON SEQUENCE model_cost_type_id_seq TO ged4all_owner;
-GRANT ALL ON SEQUENCE model_cost_type_id_seq TO ged2admin;
-GRANT SELECT,USAGE ON SEQUENCE model_cost_type_id_seq TO gedusers;
+ALTER TABLE ONLY occupancy
+    ADD CONSTRAINT occupancy_asset_id_fk FOREIGN KEY (asset_id) REFERENCES asset(id) ON DELETE CASCADE;
 
 
 --
--- Name: occupancy; Type: ACL; Schema: level2; Owner: ged4all_owner
+-- Name: tags_asset_id_fkey; Type: FK CONSTRAINT; Schema: level2; Owner: -
 --
 
-REVOKE ALL ON TABLE occupancy FROM PUBLIC;
-REVOKE ALL ON TABLE occupancy FROM ged4all_owner;
-GRANT ALL ON TABLE occupancy TO ged4all_owner;
-GRANT ALL ON TABLE occupancy TO ged2admin;
-GRANT SELECT ON TABLE occupancy TO gedusers;
-GRANT ALL ON TABLE occupancy TO contributor;
-
-
---
--- Name: occupancy_id_seq; Type: ACL; Schema: level2; Owner: ged4all_owner
---
-
-REVOKE ALL ON SEQUENCE occupancy_id_seq FROM PUBLIC;
-REVOKE ALL ON SEQUENCE occupancy_id_seq FROM ged4all_owner;
-GRANT ALL ON SEQUENCE occupancy_id_seq TO ged4all_owner;
-GRANT ALL ON SEQUENCE occupancy_id_seq TO ged2admin;
-GRANT SELECT,USAGE ON SEQUENCE occupancy_id_seq TO gedusers;
+ALTER TABLE ONLY tags
+    ADD CONSTRAINT tags_asset_id_fkey FOREIGN KEY (asset_id) REFERENCES asset(id) ON DELETE CASCADE;
 
 
 --
