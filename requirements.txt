@@ -1,5 +1,5 @@
 # Python requirements for scripts
 # located in the 'python' folder
 openquake.engine
-django
+django<2
 psycopg2
