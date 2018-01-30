@@ -136,16 +136,53 @@ VALUES (%s,%s,%s,%s)
 RETURNING id"""
 
 
+def _get_contribution(ex):
+    """
+    Get contribution node if preset
+    """
+    try:
+        return ex.contribution
+    except Exception:
+        # Ignore exception - optional node
+        return None
+
+
+def _get_model_date(cntr):
+    try:
+        return cntr.model_date.text
+    except Exception:
+        # Ignore exception - optional node
+        return None
+
+
+def _get_model_source(cntr):
+    try:
+        return cntr.model_source.text
+    except Exception:
+        # Ignore exception - optional node
+        return None
+
+
+def _get_notes(cntr):
+    try:
+        return cntr.notes.text
+    except Exception:
+        # Ignore exception - optional node
+        return None
+
+
 def _import_contribution(cursor, ex, model_id):
     """
-    Import contribution meta-data
+    Import contribution meta-data if present
     """
-    if not ex.contribution:
+    cntr = _get_contribution(ex)
+    if cntr is None:
         return
+
     cursor.execute(CONTRIBUTION_QUERY, [
-        ex.contribution.model_source.text,
-        ex.contribution.model_date.text,
-        ex.contribution.notes.text,
+        _get_model_source(cntr),
+        _get_model_date(cntr),
+        _get_notes(cntr),
         model_id])
     return cursor.fetchone()[0]
 
