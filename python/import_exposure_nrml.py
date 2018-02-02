@@ -142,33 +142,20 @@ def _get_contribution(ex):
     """
     try:
         return ex.contribution
-    except Exception:
+    except AttributeError:
         # Ignore exception - optional node
         return None
 
 
-def _get_model_date(cntr):
+def _get_optional_child_text(node, child):
+    """
+    The text contained in the specied child node or None if not present
+    """
     try:
-        return cntr.model_date.text
-    except Exception:
+        return getattr(node, child).text
+    except AttributeError:
         # Ignore exception - optional node
-        return None
-
-
-def _get_model_source(cntr):
-    try:
-        return cntr.model_source.text
-    except Exception:
-        # Ignore exception - optional node
-        return None
-
-
-def _get_notes(cntr):
-    try:
-        return cntr.notes.text
-    except Exception:
-        # Ignore exception - optional node
-        return None
+        pass
 
 
 def _import_contribution(cursor, ex, model_id):
@@ -180,9 +167,9 @@ def _import_contribution(cursor, ex, model_id):
         return
 
     cursor.execute(CONTRIBUTION_QUERY, [
-        _get_model_source(cntr),
-        _get_model_date(cntr),
-        _get_notes(cntr),
+        _get_optional_child_text(cntr, 'model_source'),
+        _get_optional_child_text(cntr, 'model_date'),
+        _get_optional_child_text(cntr, 'notes'),
         model_id])
     return cursor.fetchone()[0]
 
