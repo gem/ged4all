@@ -149,7 +149,7 @@ def _get_contribution(ex):
 
 def _get_optional_child_text(node, child):
     """
-    The text contained in the specied child node or None if not present
+    The text contained in the specified child node or None if not present
     """
     try:
         return getattr(node, child).text
