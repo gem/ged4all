@@ -129,6 +129,50 @@ def _import_cost_types(cursor, ex, model_id):
         type_ids[cost_name] = cost_type_id
     return type_ids
 
+CONTRIBUTION_QUERY = """
+INSERT INTO level2.contribution(
+    model_source, model_date, notes, exposure_model_id)
+VALUES (%s,%s,%s,%s)
+RETURNING id"""
+
+
+def _get_contribution(ex):
+    """
+    Get contribution node if preset
+    """
+    try:
+        return ex.contribution
+    except AttributeError:
+        # Ignore exception - optional node
+        return None
+
+
+def _get_optional_child_text(node, child):
+    """
+    The text contained in the specified child node or None if not present
+    """
+    try:
+        return getattr(node, child).text
+    except AttributeError:
+        # Ignore exception - optional node
+        pass
+
+
+def _import_contribution(cursor, ex, model_id):
+    """
+    Import contribution meta-data if present
+    """
+    cntr = _get_contribution(ex)
+    if cntr is None:
+        return
+
+    cursor.execute(CONTRIBUTION_QUERY, [
+        _get_optional_child_text(cntr, 'model_source'),
+        _get_optional_child_text(cntr, 'model_date'),
+        _get_optional_child_text(cntr, 'notes'),
+        model_id])
+    return cursor.fetchone()[0]
+
 
 def _get_full_geom(asset):
     """
@@ -238,8 +282,8 @@ def _import_assets(cursor, ex, ctd, model_id):
             cursor.execute(COST_QUERY, [
                 ctd[cost['type']],
                 cost['value'],
-                cost['deductible'],
-                cost['insuranceLimit'],
+                cost.attrib.get('deductible'),
+                cost.attrib.get('insuranceLimit'),
                 asset_id
             ])
 
@@ -266,6 +310,7 @@ def import_exposure_model(ex):
 
     with connections['gedcontrib'].cursor() as cursor:
         model_id = _import_model(cursor, ex)
+        _import_contribution(cursor, ex, model_id)
         verbose_message('Inserted model, id={0}\n'.format(model_id))
         ctd = _import_cost_types(cursor, ex, model_id)
         _import_assets(cursor, ex, ctd, model_id)

@@ -90,6 +90,10 @@ TAGS_QUERY = """
 SELECT * FROM level2.tags WHERE asset_id=%s
 """
 
+CONTRIBUTION_QUERY = """
+SELECT * FROM level2.contribution WHERE exposure_model_id=%s
+"""
+
 
 def _handle_cost_types(cursor, model_id, conv):
     ctd = {}
@@ -145,6 +149,19 @@ def _handle_tags(anode, cursor, asset):
             tags_node.attrib[tag['name']] = tag['value']
 
 
+def _handle_contribution(exm, cursor, model_id):
+    cursor.execute(CONTRIBUTION_QUERY, [model_id])
+    con_dict = dictfetchone(cursor)
+    if con_dict:
+        contribution = etree.SubElement(exm, 'contribution')
+        etree.SubElement(contribution, 'model_source').text = \
+            con_dict['model_source']
+        etree.SubElement(contribution, 'model_date').text = \
+            con_dict['model_date']
+        etree.SubElement(contribution, 'notes').text = \
+            con_dict['notes']
+
+
 def _build_tree(model_id, model_dict, cursor):
     nrml = etree.Element(
         'nrml', {'xmlns': 'http://openquake.org/xmlns/nrml/0.5'})
@@ -156,6 +173,7 @@ def _build_tree(model_id, model_dict, cursor):
     exm = etree.SubElement(nrml, 'exposureModel', em_dict)
     etree.SubElement(exm, 'description').text = \
         model_dict['description']
+    _handle_contribution(exm, cursor, model_id)
     conv = etree.SubElement(exm, 'conversions')
     if model_dict['tag_names'] is not None:
         etree.SubElement(exm, 'tagNames').text = \
