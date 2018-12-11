@@ -26,6 +26,7 @@ population grid.
 import sys
 
 from openquake.hazardlib.nrml import read
+from openquake.commonlib import readinput
 from django.db import connections
 from django.conf import settings
 
@@ -64,7 +65,14 @@ def _get_tag_names(ex):
     Return the content of the tagNames tag or None if not found
     """
     try:
-        return ex.tagNames.text
+        tag_names = ''
+        count = 0
+        for name in ex.tagNames.text:
+            tag_names += name
+            if count > 0:
+                tag_names += ' '
+            count += 1
+        return tag_names
     except Exception:
         return None
 
@@ -264,14 +272,20 @@ def _get_costs(asset):
     return occs
 
 
-def _import_assets(cursor, ex, ctd, model_id):
+def _import_assets(cursor, ex, ctd, model_id, nrml_file):
     """
     Import all assets and related cost and occupancy information
     """
     asset_count = 1
-
     num_assets = len(ex.assets)
-    for asset in ex.assets:
+
+    if num_assets == 0:
+        al = list(readinput.Exposure.read(nrml_file, asset_nodes=True))
+        num_assets = len(al)
+    else:
+        al = ex.assets
+
+    for asset in al:
         verbose_message('Considering asset {0} of {1}, {2}%\n'.format(
             asset_count, num_assets, asset_count * 100 / num_assets
         ))
@@ -302,7 +316,7 @@ def _import_assets(cursor, ex, ctd, model_id):
             ])
 
 
-def import_exposure_model(ex):
+def import_exposure_model(ex, nrml_file):
     """
     Import exposure from an exposure model node
     """
@@ -313,7 +327,7 @@ def import_exposure_model(ex):
         _import_contribution(cursor, ex, model_id)
         verbose_message('Inserted model, id={0}\n'.format(model_id))
         ctd = _import_cost_types(cursor, ex, model_id)
-        _import_assets(cursor, ex, ctd, model_id)
+        _import_assets(cursor, ex, ctd, model_id, nrml_file)
         return model_id
 
 
@@ -321,7 +335,7 @@ def import_exposure_file(nrml_file):
     """
     Import exposure from a NRML file
     """
-    return import_exposure_model(read(nrml_file).exposureModel)
+    return import_exposure_model(read(nrml_file).exposureModel, nrml_file)
 
 
 if __name__ == '__main__':
