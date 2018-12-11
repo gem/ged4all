@@ -29,11 +29,15 @@ CREATE TYPE cf_common.hazard_enum AS ENUM (
 --
 CREATE TABLE IF NOT EXISTS cf_common.license (
 	id		SERIAL	PRIMARY KEY,
-	code	VARCHAR NOT NNULL,
+	code	VARCHAR NOT NULL,
 	name	VARCHAR	NOT NULL,
 	notes	TEXT,
 	url		VARCHAR NOT NULL
 );
 COMMENT ON TABLE cf_common.license IS
-	'List of supported licenses'
+	'List of supported licenses';
 
+DELETE FROM cf_common.license;
+COPY cf_common.license (code,name,notes,url)
+	FROM '/tmp/licenses.csv'
+	WITH (FORMAT csv, header);
