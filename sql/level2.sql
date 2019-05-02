@@ -539,7 +539,6 @@ GRANT USAGE ON SCHEMA level2 TO gedusers;
 REVOKE ALL ON TABLE level2.asset FROM PUBLIC;
 GRANT ALL ON TABLE level2.asset TO ged2admin;
 GRANT SELECT ON TABLE level2.asset TO gedusers;
-GRANT ALL ON TABLE level2.asset TO contributor;
 
 
 --
@@ -549,7 +548,6 @@ GRANT ALL ON TABLE level2.asset TO contributor;
 REVOKE ALL ON TABLE level2.cost FROM PUBLIC;
 GRANT ALL ON TABLE level2.cost TO ged2admin;
 GRANT SELECT ON TABLE level2.cost TO gedusers;
-GRANT ALL ON TABLE level2.cost TO contributor;
 
 
 --
@@ -559,7 +557,6 @@ GRANT ALL ON TABLE level2.cost TO contributor;
 REVOKE ALL ON TABLE level2.model_cost_type FROM PUBLIC;
 GRANT ALL ON TABLE level2.model_cost_type TO ged2admin;
 GRANT SELECT ON TABLE level2.model_cost_type TO gedusers;
-GRANT ALL ON TABLE level2.model_cost_type TO contributor;
 
 
 --
@@ -569,7 +566,6 @@ GRANT ALL ON TABLE level2.model_cost_type TO contributor;
 REVOKE ALL ON TABLE level2.occupancy FROM PUBLIC;
 GRANT ALL ON TABLE level2.occupancy TO ged2admin;
 GRANT SELECT ON TABLE level2.occupancy TO gedusers;
-GRANT ALL ON TABLE level2.occupancy TO contributor;
 
 
 --
@@ -597,7 +593,6 @@ GRANT SELECT,USAGE ON SEQUENCE level2.asset_id_seq TO gedusers;
 REVOKE ALL ON TABLE level2.contribution FROM PUBLIC;
 GRANT ALL ON TABLE level2.contribution TO ged2admin;
 GRANT SELECT ON TABLE level2.contribution TO gedusers;
-GRANT ALL ON TABLE level2.contribution TO contributor;
 
 
 --
@@ -625,7 +620,6 @@ GRANT SELECT,USAGE ON SEQUENCE level2.cost_id_seq TO gedusers;
 REVOKE ALL ON TABLE level2.exposure_model FROM PUBLIC;
 GRANT ALL ON TABLE level2.exposure_model TO ged2admin;
 GRANT SELECT ON TABLE level2.exposure_model TO gedusers;
-GRANT ALL ON TABLE level2.exposure_model TO contributor;
 
 
 --
