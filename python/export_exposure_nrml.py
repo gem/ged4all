@@ -63,6 +63,7 @@ def dictfetchone(cursor):
         columns = [col[0] for col in cursor.description]
         return dict(zip(columns, row))
 
+
 MODEL_QUERY = 'SELECT * FROM level2.exposure_model WHERE id=%s'
 
 COST_TYPE_QUERY = """

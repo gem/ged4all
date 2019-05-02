@@ -105,6 +105,7 @@ def _import_model(cursor, ex):
     ])
     return cursor.fetchone()[0]
 
+
 COST_TYPE_QUERY = """
 INSERT INTO level2.model_cost_type(
     unit, cost_type_name, aggregation_type, exposure_model_id)
@@ -138,6 +139,7 @@ def _import_cost_types(cursor, ex, model_id):
         # Store cost_type id for use when inserting into cost table below
         type_ids[cost_name] = cost_type_id
     return type_ids
+
 
 CONTRIBUTION_QUERY = """
 INSERT INTO level2.contribution(
@@ -208,6 +210,7 @@ def _get_full_geom(asset):
         # Ignore exception - optional node
         return None
 
+
 ASSET_QUERY = """
 INSERT INTO level2.asset (
   exposure_model_id,asset_ref,taxonomy,number_of_units,area,
@@ -235,6 +238,7 @@ def _import_asset(cursor, asset, model_id):
         _get_full_geom(asset)
     ])
     return cursor.fetchone()[0]
+
 
 COST_QUERY = """INSERT INTO level2.cost (
     cost_type_id, value, deductible, insurance_limit, asset_id)
