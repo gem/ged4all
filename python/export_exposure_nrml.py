@@ -91,7 +91,10 @@ SELECT * FROM level2.tags WHERE asset_id=%s
 """
 
 CONTRIBUTION_QUERY = """
-SELECT * FROM level2.contribution WHERE exposure_model_id=%s
+SELECT c.*, l.code AS license_code
+ FROM level2.contribution c
+ JOIN cf_common.license l ON c.license_id=l.id
+WHERE exposure_model_id=%s
 """
 
 
@@ -160,6 +163,12 @@ def _handle_contribution(exm, cursor, model_id):
             con_dict['model_date']
         etree.SubElement(contribution, 'notes').text = \
             con_dict['notes']
+        etree.SubElement(contribution, 'license_code').text = \
+            con_dict['license_code']
+        etree.SubElement(contribution, 'version').text = \
+            con_dict['version']
+        etree.SubElement(contribution, 'purpose').text = \
+            con_dict['purpose']
 
 
 def _build_tree(model_id, model_dict, cursor):
