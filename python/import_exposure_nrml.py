@@ -30,10 +30,12 @@ from openquake.commonlib import readinput
 from django.db import connections
 from django.conf import settings
 
+from cf_common import License
+
 import db_settings
 settings.configure(DATABASES=db_settings.DATABASES)
 
-VERBOSE = False
+VERBOSE = True
 
 
 def verbose_message(msg):
@@ -103,6 +105,7 @@ def _import_model(cursor, ex):
     ])
     return cursor.fetchone()[0]
 
+
 COST_TYPE_QUERY = """
 INSERT INTO level2.model_cost_type(
     unit, cost_type_name, aggregation_type, exposure_model_id)
@@ -137,10 +140,18 @@ def _import_cost_types(cursor, ex, model_id):
         type_ids[cost_name] = cost_type_id
     return type_ids
 
+
 CONTRIBUTION_QUERY = """
 INSERT INTO level2.contribution(
-    model_source, model_date, notes, exposure_model_id)
-VALUES (%s,%s,%s,%s)
+    model_source, model_date, notes,
+    license_id, purpose, version,
+    exposure_model_id
+)
+VALUES (
+    %s,%s,%s,
+    %s,%s,%s,
+    %s
+)
 RETURNING id"""
 
 
@@ -174,10 +185,17 @@ def _import_contribution(cursor, ex, model_id):
     if cntr is None:
         return
 
+    lc = _get_optional_child_text(cntr, 'license_code')
+    if lc is not None:
+        lc = lc.strip()
+
     cursor.execute(CONTRIBUTION_QUERY, [
         _get_optional_child_text(cntr, 'model_source'),
         _get_optional_child_text(cntr, 'model_date'),
         _get_optional_child_text(cntr, 'notes'),
+        License.get_license_id(lc),
+        _get_optional_child_text(cntr, 'purpose'),
+        _get_optional_child_text(cntr, 'version'),
         model_id])
     return cursor.fetchone()[0]
 
@@ -191,6 +209,7 @@ def _get_full_geom(asset):
     except Exception:
         # Ignore exception - optional node
         return None
+
 
 ASSET_QUERY = """
 INSERT INTO level2.asset (
@@ -219,6 +238,7 @@ def _import_asset(cursor, asset, model_id):
         _get_full_geom(asset)
     ])
     return cursor.fetchone()[0]
+
 
 COST_QUERY = """INSERT INTO level2.cost (
     cost_type_id, value, deductible, insurance_limit, asset_id)
@@ -323,6 +343,7 @@ def import_exposure_model(ex, nrml_file):
     verbose_message("Model contains {0} assets\n" .format(len(ex.assets)))
 
     with connections['gedcontrib'].cursor() as cursor:
+        License.load_licenses(cursor)
         model_id = _import_model(cursor, ex)
         _import_contribution(cursor, ex, model_id)
         verbose_message('Inserted model, id={0}\n'.format(model_id))
