@@ -23,7 +23,7 @@ CREATE TABLE cf_common.hazard_type (
     name    VARCHAR NOT NULL
 );
 COMMENT ON TABLE cf_common.hazard_type IS 'Valid Hazard types';
-ALTER TABLE cf_common.hazard_type OWNER TO contributor;
+ALTER TABLE cf_common.hazard_type OWNER TO ged2admin;
 
 DELETE FROM cf_common.hazard_type;
 COPY cf_common.hazard_type (code, name) FROM stdin;
@@ -49,7 +49,7 @@ CREATE TABLE cf_common.process_type (
     hazard_code VARCHAR NOT NULL,
     name        VARCHAR NOT NULL
 );
-ALTER TABLE cf_common.process_type OWNER TO contributor;
+ALTER TABLE cf_common.process_type OWNER TO ged2admin;
 
 DELETE FROM cf_common.process_type;
 COPY cf_common.process_type (code, hazard_code, name) FROM stdin;
@@ -113,7 +113,7 @@ CREATE TABLE IF NOT EXISTS cf_common.license (
 );
 COMMENT ON TABLE cf_common.license IS
 	'List of supported licenses';
-ALTER TABLE cf_common.process_type OWNER TO contributor;
+ALTER TABLE cf_common.process_type OWNER TO ged2admin;
 
 DELETE FROM cf_common.license;
 COPY cf_common.license (code,name,notes,url)
@@ -131,7 +131,7 @@ COMMIT;
 
 GRANT USAGE ON SCHEMA cf_common TO gedusers;
 GRANT SELECT ON ALL TABLES IN SCHEMA cf_common TO gedusers;
-GRANT USAGE ON ALL SEQUENCES IN SCHEMA cf_common TO contributor;
+GRANT USAGE ON ALL SEQUENCES IN SCHEMA cf_common TO ged2admin;
 
 -- Magic Vim comment to use 4 space tabs
 -- vim: set ts=4:sw=4
