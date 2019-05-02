@@ -2,13 +2,14 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.8
--- Dumped by pg_dump version 9.5.8
+-- Dumped from database version 9.5.16
+-- Dumped by pg_dump version 9.5.16
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
 SET check_function_bodies = false;
 SET client_min_messages = warning;
 SET row_security = off;
@@ -20,17 +21,25 @@ SET row_security = off;
 CREATE SCHEMA level2;
 
 
-SET search_path = level2, pg_catalog;
+--
+-- Name: category_enum; Type: TYPE; Schema: level2; Owner: -
+--
 
-SET default_tablespace = ged2_ts;
+CREATE TYPE level2.category_enum AS ENUM (
+    'buildings',
+    'indicators',
+    'infrastructure',
+    'crops, livestock and forestry'
+);
+
 
 SET default_with_oids = false;
 
 --
--- Name: asset; Type: TABLE; Schema: level2; Owner: -; Tablespace: ged2_ts
+-- Name: asset; Type: TABLE; Schema: level2; Owner: -
 --
 
-CREATE TABLE asset (
+CREATE TABLE level2.asset (
     id integer NOT NULL,
     exposure_model_id integer NOT NULL,
     asset_ref character varying NOT NULL,
@@ -45,10 +54,10 @@ CREATE TABLE asset (
 
 
 --
--- Name: cost; Type: TABLE; Schema: level2; Owner: -; Tablespace: ged2_ts
+-- Name: cost; Type: TABLE; Schema: level2; Owner: -
 --
 
-CREATE TABLE cost (
+CREATE TABLE level2.cost (
     id integer NOT NULL,
     asset_id integer NOT NULL,
     cost_type_id integer NOT NULL,
@@ -60,10 +69,10 @@ CREATE TABLE cost (
 
 
 --
--- Name: model_cost_type; Type: TABLE; Schema: level2; Owner: -; Tablespace: ged2_ts
+-- Name: model_cost_type; Type: TABLE; Schema: level2; Owner: -
 --
 
-CREATE TABLE model_cost_type (
+CREATE TABLE level2.model_cost_type (
     id integer NOT NULL,
     exposure_model_id integer NOT NULL,
     cost_type_name character varying NOT NULL,
@@ -74,10 +83,10 @@ CREATE TABLE model_cost_type (
 
 
 --
--- Name: occupancy; Type: TABLE; Schema: level2; Owner: -; Tablespace: ged2_ts
+-- Name: occupancy; Type: TABLE; Schema: level2; Owner: -
 --
 
-CREATE TABLE occupancy (
+CREATE TABLE level2.occupancy (
     id integer NOT NULL,
     asset_id integer NOT NULL,
     period character varying NOT NULL,
@@ -89,7 +98,7 @@ CREATE TABLE occupancy (
 -- Name: all_exposure; Type: VIEW; Schema: level2; Owner: -
 --
 
-CREATE VIEW all_exposure AS
+CREATE VIEW level2.all_exposure AS
  SELECT a.asset_ref,
     a.taxonomy,
     a.number_of_units,
@@ -103,17 +112,17 @@ CREATE VIEW all_exposure AS
     mct.unit,
     public.st_x(a.the_geom) AS lon,
     public.st_y(a.the_geom) AS lat
-   FROM (((asset a
-     LEFT JOIN cost c ON ((c.asset_id = a.id)))
-     LEFT JOIN model_cost_type mct ON ((mct.id = c.cost_type_id)))
-     LEFT JOIN occupancy occ ON ((occ.asset_id = a.id)));
+   FROM (((level2.asset a
+     LEFT JOIN level2.cost c ON ((c.asset_id = a.id)))
+     LEFT JOIN level2.model_cost_type mct ON ((mct.id = c.cost_type_id)))
+     LEFT JOIN level2.occupancy occ ON ((occ.asset_id = a.id)));
 
 
 --
 -- Name: asset_id_seq; Type: SEQUENCE; Schema: level2; Owner: -
 --
 
-CREATE SEQUENCE asset_id_seq
+CREATE SEQUENCE level2.asset_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -125,19 +134,22 @@ CREATE SEQUENCE asset_id_seq
 -- Name: asset_id_seq; Type: SEQUENCE OWNED BY; Schema: level2; Owner: -
 --
 
-ALTER SEQUENCE asset_id_seq OWNED BY asset.id;
+ALTER SEQUENCE level2.asset_id_seq OWNED BY level2.asset.id;
 
 
 --
--- Name: contribution; Type: TABLE; Schema: level2; Owner: -; Tablespace: ged2_ts
+-- Name: contribution; Type: TABLE; Schema: level2; Owner: -
 --
 
-CREATE TABLE contribution (
+CREATE TABLE level2.contribution (
     id integer NOT NULL,
     exposure_model_id integer NOT NULL,
     model_source character varying NOT NULL,
-    model_date character varying NOT NULL,
-    notes text
+    model_date date NOT NULL,
+    notes text,
+    license_id integer NOT NULL,
+    version character varying,
+    purpose text
 );
 
 
@@ -145,7 +157,7 @@ CREATE TABLE contribution (
 -- Name: contribution_id_seq; Type: SEQUENCE; Schema: level2; Owner: -
 --
 
-CREATE SEQUENCE contribution_id_seq
+CREATE SEQUENCE level2.contribution_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -157,14 +169,14 @@ CREATE SEQUENCE contribution_id_seq
 -- Name: contribution_id_seq; Type: SEQUENCE OWNED BY; Schema: level2; Owner: -
 --
 
-ALTER SEQUENCE contribution_id_seq OWNED BY contribution.id;
+ALTER SEQUENCE level2.contribution_id_seq OWNED BY level2.contribution.id;
 
 
 --
 -- Name: cost_id_seq; Type: SEQUENCE; Schema: level2; Owner: -
 --
 
-CREATE SEQUENCE cost_id_seq
+CREATE SEQUENCE level2.cost_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -176,22 +188,23 @@ CREATE SEQUENCE cost_id_seq
 -- Name: cost_id_seq; Type: SEQUENCE OWNED BY; Schema: level2; Owner: -
 --
 
-ALTER SEQUENCE cost_id_seq OWNED BY cost.id;
+ALTER SEQUENCE level2.cost_id_seq OWNED BY level2.cost.id;
 
 
 --
--- Name: exposure_model; Type: TABLE; Schema: level2; Owner: -; Tablespace: ged2_ts
+-- Name: exposure_model; Type: TABLE; Schema: level2; Owner: -
 --
 
-CREATE TABLE exposure_model (
+CREATE TABLE level2.exposure_model (
     id integer NOT NULL,
     name character varying NOT NULL,
     description character varying,
     taxonomy_source character varying,
-    category character varying NOT NULL,
+    category level2.category_enum NOT NULL,
     area_type character varying,
     area_unit character varying,
     tag_names character varying,
+    use cf_common.occupancy_enum,
     CONSTRAINT area_type_value CHECK (((area_type IS NULL) OR ((area_type)::text = 'per_asset'::text) OR ((area_type)::text = 'aggregated'::text)))
 );
 
@@ -200,7 +213,7 @@ CREATE TABLE exposure_model (
 -- Name: exposure_model_id_seq; Type: SEQUENCE; Schema: level2; Owner: -
 --
 
-CREATE SEQUENCE exposure_model_id_seq
+CREATE SEQUENCE level2.exposure_model_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -212,14 +225,14 @@ CREATE SEQUENCE exposure_model_id_seq
 -- Name: exposure_model_id_seq; Type: SEQUENCE OWNED BY; Schema: level2; Owner: -
 --
 
-ALTER SEQUENCE exposure_model_id_seq OWNED BY exposure_model.id;
+ALTER SEQUENCE level2.exposure_model_id_seq OWNED BY level2.exposure_model.id;
 
 
 --
 -- Name: model_cost_type_id_seq; Type: SEQUENCE; Schema: level2; Owner: -
 --
 
-CREATE SEQUENCE model_cost_type_id_seq
+CREATE SEQUENCE level2.model_cost_type_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -231,14 +244,14 @@ CREATE SEQUENCE model_cost_type_id_seq
 -- Name: model_cost_type_id_seq; Type: SEQUENCE OWNED BY; Schema: level2; Owner: -
 --
 
-ALTER SEQUENCE model_cost_type_id_seq OWNED BY model_cost_type.id;
+ALTER SEQUENCE level2.model_cost_type_id_seq OWNED BY level2.model_cost_type.id;
 
 
 --
 -- Name: occupancy_id_seq; Type: SEQUENCE; Schema: level2; Owner: -
 --
 
-CREATE SEQUENCE occupancy_id_seq
+CREATE SEQUENCE level2.occupancy_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -250,14 +263,14 @@ CREATE SEQUENCE occupancy_id_seq
 -- Name: occupancy_id_seq; Type: SEQUENCE OWNED BY; Schema: level2; Owner: -
 --
 
-ALTER SEQUENCE occupancy_id_seq OWNED BY occupancy.id;
+ALTER SEQUENCE level2.occupancy_id_seq OWNED BY level2.occupancy.id;
 
 
 --
--- Name: tags; Type: TABLE; Schema: level2; Owner: -; Tablespace: ged2_ts
+-- Name: tags; Type: TABLE; Schema: level2; Owner: -
 --
 
-CREATE TABLE tags (
+CREATE TABLE level2.tags (
     id integer NOT NULL,
     asset_id integer NOT NULL,
     name character varying NOT NULL,
@@ -269,7 +282,7 @@ CREATE TABLE tags (
 -- Name: tags_id_seq; Type: SEQUENCE; Schema: level2; Owner: -
 --
 
-CREATE SEQUENCE tags_id_seq
+CREATE SEQUENCE level2.tags_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -281,65 +294,63 @@ CREATE SEQUENCE tags_id_seq
 -- Name: tags_id_seq; Type: SEQUENCE OWNED BY; Schema: level2; Owner: -
 --
 
-ALTER SEQUENCE tags_id_seq OWNED BY tags.id;
+ALTER SEQUENCE level2.tags_id_seq OWNED BY level2.tags.id;
 
 
 --
 -- Name: id; Type: DEFAULT; Schema: level2; Owner: -
 --
 
-ALTER TABLE ONLY asset ALTER COLUMN id SET DEFAULT nextval('asset_id_seq'::regclass);
+ALTER TABLE ONLY level2.asset ALTER COLUMN id SET DEFAULT nextval('level2.asset_id_seq'::regclass);
 
 
 --
 -- Name: id; Type: DEFAULT; Schema: level2; Owner: -
 --
 
-ALTER TABLE ONLY contribution ALTER COLUMN id SET DEFAULT nextval('contribution_id_seq'::regclass);
+ALTER TABLE ONLY level2.contribution ALTER COLUMN id SET DEFAULT nextval('level2.contribution_id_seq'::regclass);
 
 
 --
 -- Name: id; Type: DEFAULT; Schema: level2; Owner: -
 --
 
-ALTER TABLE ONLY cost ALTER COLUMN id SET DEFAULT nextval('cost_id_seq'::regclass);
+ALTER TABLE ONLY level2.cost ALTER COLUMN id SET DEFAULT nextval('level2.cost_id_seq'::regclass);
 
 
 --
 -- Name: id; Type: DEFAULT; Schema: level2; Owner: -
 --
 
-ALTER TABLE ONLY exposure_model ALTER COLUMN id SET DEFAULT nextval('exposure_model_id_seq'::regclass);
+ALTER TABLE ONLY level2.exposure_model ALTER COLUMN id SET DEFAULT nextval('level2.exposure_model_id_seq'::regclass);
 
 
 --
 -- Name: id; Type: DEFAULT; Schema: level2; Owner: -
 --
 
-ALTER TABLE ONLY model_cost_type ALTER COLUMN id SET DEFAULT nextval('model_cost_type_id_seq'::regclass);
+ALTER TABLE ONLY level2.model_cost_type ALTER COLUMN id SET DEFAULT nextval('level2.model_cost_type_id_seq'::regclass);
 
 
 --
 -- Name: id; Type: DEFAULT; Schema: level2; Owner: -
 --
 
-ALTER TABLE ONLY occupancy ALTER COLUMN id SET DEFAULT nextval('occupancy_id_seq'::regclass);
+ALTER TABLE ONLY level2.occupancy ALTER COLUMN id SET DEFAULT nextval('level2.occupancy_id_seq'::regclass);
 
 
 --
 -- Name: id; Type: DEFAULT; Schema: level2; Owner: -
 --
 
-ALTER TABLE ONLY tags ALTER COLUMN id SET DEFAULT nextval('tags_id_seq'::regclass);
+ALTER TABLE ONLY level2.tags ALTER COLUMN id SET DEFAULT nextval('level2.tags_id_seq'::regclass);
 
-
-SET default_tablespace = '';
 
 --
 -- Name: asset_exposure_model_id_asset_ref_key; Type: CONSTRAINT; Schema: level2; Owner: -
 --
 
-ALTER TABLE ONLY asset
+ALTER TABLE ONLY level2.asset
     ADD CONSTRAINT asset_exposure_model_id_asset_ref_key UNIQUE (exposure_model_id, asset_ref);
 
 
@@ -347,7 +358,7 @@ ALTER TABLE ONLY asset
 -- Name: asset_pkey; Type: CONSTRAINT; Schema: level2; Owner: -
 --
 
-ALTER TABLE ONLY asset
+ALTER TABLE ONLY level2.asset
     ADD CONSTRAINT asset_pkey PRIMARY KEY (id);
 
 
@@ -355,7 +366,7 @@ ALTER TABLE ONLY asset
 -- Name: contribution_pkey; Type: CONSTRAINT; Schema: level2; Owner: -
 --
 
-ALTER TABLE ONLY contribution
+ALTER TABLE ONLY level2.contribution
     ADD CONSTRAINT contribution_pkey PRIMARY KEY (id);
 
 
@@ -363,7 +374,7 @@ ALTER TABLE ONLY contribution
 -- Name: cost_asset_id_cost_type_id_key; Type: CONSTRAINT; Schema: level2; Owner: -
 --
 
-ALTER TABLE ONLY cost
+ALTER TABLE ONLY level2.cost
     ADD CONSTRAINT cost_asset_id_cost_type_id_key UNIQUE (asset_id, cost_type_id);
 
 
@@ -371,7 +382,7 @@ ALTER TABLE ONLY cost
 -- Name: cost_pkey; Type: CONSTRAINT; Schema: level2; Owner: -
 --
 
-ALTER TABLE ONLY cost
+ALTER TABLE ONLY level2.cost
     ADD CONSTRAINT cost_pkey PRIMARY KEY (id);
 
 
@@ -379,7 +390,7 @@ ALTER TABLE ONLY cost
 -- Name: exposure_model_pkey; Type: CONSTRAINT; Schema: level2; Owner: -
 --
 
-ALTER TABLE ONLY exposure_model
+ALTER TABLE ONLY level2.exposure_model
     ADD CONSTRAINT exposure_model_pkey PRIMARY KEY (id);
 
 
@@ -387,7 +398,7 @@ ALTER TABLE ONLY exposure_model
 -- Name: model_cost_type_pkey; Type: CONSTRAINT; Schema: level2; Owner: -
 --
 
-ALTER TABLE ONLY model_cost_type
+ALTER TABLE ONLY level2.model_cost_type
     ADD CONSTRAINT model_cost_type_pkey PRIMARY KEY (id);
 
 
@@ -395,118 +406,270 @@ ALTER TABLE ONLY model_cost_type
 -- Name: occupancy_pkey; Type: CONSTRAINT; Schema: level2; Owner: -
 --
 
-ALTER TABLE ONLY occupancy
+ALTER TABLE ONLY level2.occupancy
     ADD CONSTRAINT occupancy_pkey PRIMARY KEY (id);
 
 
-SET default_tablespace = ged2_ts;
-
 --
--- Name: tags_pkey; Type: CONSTRAINT; Schema: level2; Owner: -; Tablespace: ged2_ts
+-- Name: tags_pkey; Type: CONSTRAINT; Schema: level2; Owner: -
 --
 
-ALTER TABLE ONLY tags
+ALTER TABLE ONLY level2.tags
     ADD CONSTRAINT tags_pkey PRIMARY KEY (id);
 
-
-SET default_tablespace = '';
 
 --
 -- Name: asset_exposure_model_id_idx; Type: INDEX; Schema: level2; Owner: -
 --
 
-CREATE INDEX asset_exposure_model_id_idx ON asset USING btree (exposure_model_id);
+CREATE INDEX asset_exposure_model_id_idx ON level2.asset USING btree (exposure_model_id);
 
 
 --
 -- Name: asset_full_geom_idx; Type: INDEX; Schema: level2; Owner: -
 --
 
-CREATE INDEX asset_full_geom_idx ON asset USING gist (full_geom);
+CREATE INDEX asset_full_geom_idx ON level2.asset USING gist (full_geom);
 
 
 --
 -- Name: asset_the_geom_gist; Type: INDEX; Schema: level2; Owner: -
 --
 
-CREATE INDEX asset_the_geom_gist ON asset USING gist (the_geom);
+CREATE INDEX asset_the_geom_gist ON level2.asset USING gist (the_geom);
 
 
 --
 -- Name: cost_asset_id_idx; Type: INDEX; Schema: level2; Owner: -
 --
 
-CREATE INDEX cost_asset_id_idx ON cost USING btree (asset_id);
+CREATE INDEX cost_asset_id_idx ON level2.cost USING btree (asset_id);
 
 
 --
 -- Name: occupancy_asset_id_idx; Type: INDEX; Schema: level2; Owner: -
 --
 
-CREATE INDEX occupancy_asset_id_idx ON occupancy USING btree (asset_id);
+CREATE INDEX occupancy_asset_id_idx ON level2.occupancy USING btree (asset_id);
 
 
 --
 -- Name: tags_asset_id_idx; Type: INDEX; Schema: level2; Owner: -
 --
 
-CREATE INDEX tags_asset_id_idx ON tags USING btree (asset_id);
+CREATE INDEX tags_asset_id_idx ON level2.tags USING btree (asset_id);
 
 
 --
 -- Name: asset_exposure_model_id_fk; Type: FK CONSTRAINT; Schema: level2; Owner: -
 --
 
-ALTER TABLE ONLY asset
-    ADD CONSTRAINT asset_exposure_model_id_fk FOREIGN KEY (exposure_model_id) REFERENCES exposure_model(id) ON DELETE CASCADE;
+ALTER TABLE ONLY level2.asset
+    ADD CONSTRAINT asset_exposure_model_id_fk FOREIGN KEY (exposure_model_id) REFERENCES level2.exposure_model(id) ON DELETE CASCADE;
 
 
 --
 -- Name: contribution_exposure_model_id_fkey; Type: FK CONSTRAINT; Schema: level2; Owner: -
 --
 
-ALTER TABLE ONLY contribution
-    ADD CONSTRAINT contribution_exposure_model_id_fkey FOREIGN KEY (exposure_model_id) REFERENCES exposure_model(id);
+ALTER TABLE ONLY level2.contribution
+    ADD CONSTRAINT contribution_exposure_model_id_fkey FOREIGN KEY (exposure_model_id) REFERENCES level2.exposure_model(id) ON DELETE CASCADE;
+
+
+--
+-- Name: contribution_license_fkey; Type: FK CONSTRAINT; Schema: level2; Owner: -
+--
+
+ALTER TABLE ONLY level2.contribution
+    ADD CONSTRAINT contribution_license_fkey FOREIGN KEY (license_id) REFERENCES cf_common.license(id);
 
 
 --
 -- Name: cost_asset_id_fk; Type: FK CONSTRAINT; Schema: level2; Owner: -
 --
 
-ALTER TABLE ONLY cost
-    ADD CONSTRAINT cost_asset_id_fk FOREIGN KEY (asset_id) REFERENCES asset(id) ON DELETE CASCADE;
+ALTER TABLE ONLY level2.cost
+    ADD CONSTRAINT cost_asset_id_fk FOREIGN KEY (asset_id) REFERENCES level2.asset(id) ON DELETE CASCADE;
 
 
 --
 -- Name: cost_cost_type_id_fkey; Type: FK CONSTRAINT; Schema: level2; Owner: -
 --
 
-ALTER TABLE ONLY cost
-    ADD CONSTRAINT cost_cost_type_id_fkey FOREIGN KEY (cost_type_id) REFERENCES model_cost_type(id);
+ALTER TABLE ONLY level2.cost
+    ADD CONSTRAINT cost_cost_type_id_fkey FOREIGN KEY (cost_type_id) REFERENCES level2.model_cost_type(id);
 
 
 --
 -- Name: model_cost_type_exposure_model_id_fk; Type: FK CONSTRAINT; Schema: level2; Owner: -
 --
 
-ALTER TABLE ONLY model_cost_type
-    ADD CONSTRAINT model_cost_type_exposure_model_id_fk FOREIGN KEY (exposure_model_id) REFERENCES exposure_model(id) ON DELETE CASCADE;
+ALTER TABLE ONLY level2.model_cost_type
+    ADD CONSTRAINT model_cost_type_exposure_model_id_fk FOREIGN KEY (exposure_model_id) REFERENCES level2.exposure_model(id) ON DELETE CASCADE;
 
 
 --
 -- Name: occupancy_asset_id_fk; Type: FK CONSTRAINT; Schema: level2; Owner: -
 --
 
-ALTER TABLE ONLY occupancy
-    ADD CONSTRAINT occupancy_asset_id_fk FOREIGN KEY (asset_id) REFERENCES asset(id) ON DELETE CASCADE;
+ALTER TABLE ONLY level2.occupancy
+    ADD CONSTRAINT occupancy_asset_id_fk FOREIGN KEY (asset_id) REFERENCES level2.asset(id) ON DELETE CASCADE;
 
 
 --
 -- Name: tags_asset_id_fkey; Type: FK CONSTRAINT; Schema: level2; Owner: -
 --
 
-ALTER TABLE ONLY tags
-    ADD CONSTRAINT tags_asset_id_fkey FOREIGN KEY (asset_id) REFERENCES asset(id) ON DELETE CASCADE;
+ALTER TABLE ONLY level2.tags
+    ADD CONSTRAINT tags_asset_id_fkey FOREIGN KEY (asset_id) REFERENCES level2.asset(id) ON DELETE CASCADE;
+
+
+--
+-- Name: SCHEMA level2; Type: ACL; Schema: -; Owner: -
+--
+
+REVOKE ALL ON SCHEMA level2 FROM PUBLIC;
+GRANT USAGE ON SCHEMA level2 TO gedusers;
+
+
+--
+-- Name: TABLE asset; Type: ACL; Schema: level2; Owner: -
+--
+
+REVOKE ALL ON TABLE level2.asset FROM PUBLIC;
+GRANT ALL ON TABLE level2.asset TO ged2admin;
+GRANT SELECT ON TABLE level2.asset TO gedusers;
+GRANT ALL ON TABLE level2.asset TO contributor;
+
+
+--
+-- Name: TABLE cost; Type: ACL; Schema: level2; Owner: -
+--
+
+REVOKE ALL ON TABLE level2.cost FROM PUBLIC;
+GRANT ALL ON TABLE level2.cost TO ged2admin;
+GRANT SELECT ON TABLE level2.cost TO gedusers;
+GRANT ALL ON TABLE level2.cost TO contributor;
+
+
+--
+-- Name: TABLE model_cost_type; Type: ACL; Schema: level2; Owner: -
+--
+
+REVOKE ALL ON TABLE level2.model_cost_type FROM PUBLIC;
+GRANT ALL ON TABLE level2.model_cost_type TO ged2admin;
+GRANT SELECT ON TABLE level2.model_cost_type TO gedusers;
+GRANT ALL ON TABLE level2.model_cost_type TO contributor;
+
+
+--
+-- Name: TABLE occupancy; Type: ACL; Schema: level2; Owner: -
+--
+
+REVOKE ALL ON TABLE level2.occupancy FROM PUBLIC;
+GRANT ALL ON TABLE level2.occupancy TO ged2admin;
+GRANT SELECT ON TABLE level2.occupancy TO gedusers;
+GRANT ALL ON TABLE level2.occupancy TO contributor;
+
+
+--
+-- Name: TABLE all_exposure; Type: ACL; Schema: level2; Owner: -
+--
+
+REVOKE ALL ON TABLE level2.all_exposure FROM PUBLIC;
+GRANT SELECT ON TABLE level2.all_exposure TO gedusers;
+GRANT ALL ON TABLE level2.all_exposure TO ged2admin;
+
+
+--
+-- Name: SEQUENCE asset_id_seq; Type: ACL; Schema: level2; Owner: -
+--
+
+REVOKE ALL ON SEQUENCE level2.asset_id_seq FROM PUBLIC;
+GRANT ALL ON SEQUENCE level2.asset_id_seq TO ged2admin;
+GRANT SELECT,USAGE ON SEQUENCE level2.asset_id_seq TO gedusers;
+
+
+--
+-- Name: TABLE contribution; Type: ACL; Schema: level2; Owner: -
+--
+
+REVOKE ALL ON TABLE level2.contribution FROM PUBLIC;
+GRANT ALL ON TABLE level2.contribution TO ged2admin;
+GRANT SELECT ON TABLE level2.contribution TO gedusers;
+GRANT ALL ON TABLE level2.contribution TO contributor;
+
+
+--
+-- Name: SEQUENCE contribution_id_seq; Type: ACL; Schema: level2; Owner: -
+--
+
+REVOKE ALL ON SEQUENCE level2.contribution_id_seq FROM PUBLIC;
+GRANT ALL ON SEQUENCE level2.contribution_id_seq TO ged2admin;
+GRANT SELECT,USAGE ON SEQUENCE level2.contribution_id_seq TO gedusers;
+
+
+--
+-- Name: SEQUENCE cost_id_seq; Type: ACL; Schema: level2; Owner: -
+--
+
+REVOKE ALL ON SEQUENCE level2.cost_id_seq FROM PUBLIC;
+GRANT ALL ON SEQUENCE level2.cost_id_seq TO ged2admin;
+GRANT SELECT,USAGE ON SEQUENCE level2.cost_id_seq TO gedusers;
+
+
+--
+-- Name: TABLE exposure_model; Type: ACL; Schema: level2; Owner: -
+--
+
+REVOKE ALL ON TABLE level2.exposure_model FROM PUBLIC;
+GRANT ALL ON TABLE level2.exposure_model TO ged2admin;
+GRANT SELECT ON TABLE level2.exposure_model TO gedusers;
+GRANT ALL ON TABLE level2.exposure_model TO contributor;
+
+
+--
+-- Name: SEQUENCE exposure_model_id_seq; Type: ACL; Schema: level2; Owner: -
+--
+
+REVOKE ALL ON SEQUENCE level2.exposure_model_id_seq FROM PUBLIC;
+GRANT ALL ON SEQUENCE level2.exposure_model_id_seq TO ged2admin;
+GRANT SELECT,USAGE ON SEQUENCE level2.exposure_model_id_seq TO gedusers;
+
+
+--
+-- Name: SEQUENCE model_cost_type_id_seq; Type: ACL; Schema: level2; Owner: -
+--
+
+REVOKE ALL ON SEQUENCE level2.model_cost_type_id_seq FROM PUBLIC;
+GRANT ALL ON SEQUENCE level2.model_cost_type_id_seq TO ged2admin;
+GRANT SELECT,USAGE ON SEQUENCE level2.model_cost_type_id_seq TO gedusers;
+
+
+--
+-- Name: SEQUENCE occupancy_id_seq; Type: ACL; Schema: level2; Owner: -
+--
+
+REVOKE ALL ON SEQUENCE level2.occupancy_id_seq FROM PUBLIC;
+GRANT ALL ON SEQUENCE level2.occupancy_id_seq TO ged2admin;
+GRANT SELECT,USAGE ON SEQUENCE level2.occupancy_id_seq TO gedusers;
+
+
+--
+-- Name: TABLE tags; Type: ACL; Schema: level2; Owner: -
+--
+
+REVOKE ALL ON TABLE level2.tags FROM PUBLIC;
+GRANT ALL ON TABLE level2.tags TO ged2admin;
+GRANT SELECT ON TABLE level2.tags TO gedusers;
+
+
+--
+-- Name: SEQUENCE tags_id_seq; Type: ACL; Schema: level2; Owner: -
+--
+
+REVOKE ALL ON SEQUENCE level2.tags_id_seq FROM PUBLIC;
+GRANT ALL ON SEQUENCE level2.tags_id_seq TO ged2admin;
 
 
 --
