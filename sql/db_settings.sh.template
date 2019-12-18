@@ -1,0 +1,7 @@
+#!/bin/sh
+
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=ged4all
+DB_USER=
+DATABASE_URL="postgres://$DB_USER@localhost:$DB_PORT/$DB_NAME" 

@@ -35,7 +35,7 @@ from cf_common import License
 import db_settings
 settings.configure(DATABASES=db_settings.DATABASES)
 
-VERBOSE = True
+VERBOSE = False
 
 
 def verbose_message(msg):
@@ -80,7 +80,7 @@ def _get_tag_names(ex):
 
 
 MODEL_QUERY = """
-INSERT INTO level2.exposure_model (
+INSERT INTO ged4all.exposure_model (
     name, description, taxonomy_source,
     category, area_type, area_unit, tag_names
 )
@@ -107,7 +107,7 @@ def _import_model(cursor, ex):
 
 
 COST_TYPE_QUERY = """
-INSERT INTO level2.model_cost_type(
+INSERT INTO ged4all.model_cost_type(
     unit, cost_type_name, aggregation_type, exposure_model_id)
 VALUES (%s,%s,%s,%s)
 RETURNING id"""
@@ -142,7 +142,7 @@ def _import_cost_types(cursor, ex, model_id):
 
 
 CONTRIBUTION_QUERY = """
-INSERT INTO level2.contribution(
+INSERT INTO ged4all.contribution(
     model_source, model_date, notes,
     license_id, purpose, version,
     exposure_model_id
@@ -212,7 +212,7 @@ def _get_full_geom(asset):
 
 
 ASSET_QUERY = """
-INSERT INTO level2.asset (
+INSERT INTO ged4all.asset (
   exposure_model_id,asset_ref,taxonomy,number_of_units,area,
   the_geom,full_geom)
 VALUES (
@@ -240,15 +240,15 @@ def _import_asset(cursor, asset, model_id):
     return cursor.fetchone()[0]
 
 
-COST_QUERY = """INSERT INTO level2.cost (
+COST_QUERY = """INSERT INTO ged4all.cost (
     cost_type_id, value, deductible, insurance_limit, asset_id)
 VALUES (%s,%s,%s,%s,%s)"""
 
-OCC_QUERY = """INSERT INTO level2.occupancy (
+OCC_QUERY = """INSERT INTO ged4all.occupancy (
     period, occupants, asset_id)
 VALUES (%s,%s,%s)"""
 
-TAGS_QUERY = """INSERT INTO level2.tags (
+TAGS_QUERY = """INSERT INTO ged4all.tags (
     name, value, asset_id)
 VALUES (%s,%s,%s)"""
 
