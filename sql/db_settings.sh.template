@@ -1,0 +1,8 @@
+#!/bin/sh
+# Change DB_USER, and other variables to suit your installation and
+# save as db_settings.sh
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=ged4all
+DB_USER=@DB_USER@
+DB_URL="postgres://$DB_USER@localhost:$DB_PORT/$DB_NAME" 

@@ -21,13 +21,13 @@ jobs:
     env: POSTGRES
     python: 2.7
     addons:
-      postgresql: 9.5
+      postgresql: 9.6
       apt:
         packages:
-        - postgresql-9.5-postgis-2.4
+        - postgresql-9.6-postgis-2.4
     
     before_script:
      - echo "\set ON_ERROR_STOP on" > ~/.psqlrc
     script:
-     - cd sql; POSTGRES_USER=postgres ./create-db.sh
-     - psql -U postgres ged4all < common.sql && psql -U postgres ged4all < level2.sql
+     - cd sql; sed -e 's/@DB_USER@/postgres/' db_settings.sh.template > db_settings.sh; POSTGRES_USER=postgres ./create-db.sh
+     - psql -U postgres ged4all < common.sql && psql -U postgres ged4all < ged4all.sql && psql -U postgres ged4all < mover-updates.sql

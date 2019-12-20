@@ -64,36 +64,36 @@ def dictfetchone(cursor):
         return dict(zip(columns, row))
 
 
-MODEL_QUERY = 'SELECT * FROM level2.exposure_model WHERE id=%s'
+MODEL_QUERY = 'SELECT * FROM ged4all.exposure_model WHERE id=%s'
 
 COST_TYPE_QUERY = """
-SELECT * FROM level2.model_cost_type WHERE exposure_model_id=%s
+SELECT * FROM ged4all.model_cost_type WHERE exposure_model_id=%s
 """
 
 ASSET_QUERY = """
 SELECT id, exposure_model_id, asset_ref, taxonomy, number_of_units, area,
        ST_Y(the_geom) AS lat, ST_X(the_geom) AS lon,
        ST_AsText(full_geom) AS full_geom
-  FROM level2.asset
+  FROM ged4all.asset
  WHERE exposure_model_id=%s
  ORDER BY id
 """
 
 COST_QUERY = """
-SELECT * FROM level2.cost WHERE asset_id=%s
+SELECT * FROM ged4all.cost WHERE asset_id=%s
 """
 
 OCC_QUERY = """
-SELECT * FROM level2.occupancy WHERE asset_id=%s
+SELECT * FROM ged4all.occupancy WHERE asset_id=%s
 """
 
 TAGS_QUERY = """
-SELECT * FROM level2.tags WHERE asset_id=%s
+SELECT * FROM ged4all.tags WHERE asset_id=%s
 """
 
 CONTRIBUTION_QUERY = """
 SELECT c.*, l.code AS license_code
- FROM level2.contribution c
+ FROM ged4all.contribution c
  JOIN cf_common.license l ON c.license_id=l.id
 WHERE exposure_model_id=%s
 """
