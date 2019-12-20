@@ -1,5 +1,7 @@
 -- SQL statements to be applied to the CF ged4all database 
 
+ALTER SCHEMA level2 RENAME TO ged4all;
+
 -- Add a project field
 ALTER TABLE ged4all.contribution ADD COLUMN IF NOT EXISTS project VARCHAR;
 -- Provide project name for SWIO RAFI project contributions
