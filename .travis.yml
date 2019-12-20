@@ -30,4 +30,4 @@ jobs:
      - echo "\set ON_ERROR_STOP on" > ~/.psqlrc
     script:
      - cd sql; sed -e 's/@DB_USER@/postgres/' db_settings.sh.template > db_settings.sh; POSTGRES_USER=postgres ./create-db.sh
-     - psql -U postgres ged4all < common.sql && psql -U postgres ged4all < level2.sql
+     - psql -U postgres ged4all < common.sql && psql -U postgres ged4all < ged4all.sql && psql -U postgres ged4all < mover-updates.sql
