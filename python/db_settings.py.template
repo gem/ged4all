@@ -1,9 +1,5 @@
-DATABASES = {
-    # default entry required by django but not used
-    'default': {
-    },
+db_confs = {
     'geddb': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': 'ged4all',
         'USER': '<username for export here>',
         'PASSWORD': '<password here>',
@@ -14,7 +10,6 @@ DATABASES = {
         }
     },
     'gedcontrib': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': 'ged4all',
         'USER': '<username for contributions here>',
         'PASSWORD': '<password here>',

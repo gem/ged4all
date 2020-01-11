@@ -25,14 +25,12 @@ population grid.
 """
 import sys
 from xml.etree import ElementTree as etree
+from database import db_connections
+import db_settings
 
 from openquake.baselib.node import tostring
-from django.db import connections
-from django.conf import settings
-
 
 import db_settings
-settings.configure(DATABASES=db_settings.DATABASES)
 
 VERBOSE = False
 
@@ -224,6 +222,8 @@ def exposure_to_nrml(model_id):
     """
     Return a NRML XML tree for the exposure model with the specified id
     """
+    connections = db_connections(db_settings.db_confs)
+
     with connections['geddb'].cursor() as cursor:
         cursor.execute(MODEL_QUERY, [model_id])
         model_dict = dictfetchone(cursor)
