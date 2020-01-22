@@ -25,11 +25,8 @@ population grid.
 """
 import sys
 from xml.etree import ElementTree as etree
-from database import db_connections
-import db_settings
-
 from openquake.baselib.node import tostring
-
+from database import db_connections
 import db_settings
 
 VERBOSE = False
