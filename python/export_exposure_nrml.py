@@ -25,7 +25,6 @@ population grid.
 """
 import sys
 from xml.etree import ElementTree as etree
-from openquake.baselib.node import tostring
 from database import db_connections
 import db_settings
 
@@ -155,8 +154,9 @@ def _handle_contribution(exm, cursor, model_id):
         contribution = etree.SubElement(exm, 'contribution')
         etree.SubElement(contribution, 'model_source').text = \
             con_dict['model_source']
-        etree.SubElement(contribution, 'model_date').text = \
-            con_dict['model_date']
+        md = con_dict['model_date']
+        if md is not None:
+            etree.SubElement(contribution, 'model_date').text = str(md)
         etree.SubElement(contribution, 'notes').text = \
             con_dict['notes']
         etree.SubElement(contribution, 'license_code').text = \
@@ -242,7 +242,5 @@ if __name__ == '__main__':
 
         verbose_message("Exporting {0}\n".format(xmodel_id))
         sys.stdout.write('<?xml version="1.0" encoding="UTF-8"?>\n')
-        if sys.version_info[0] < 3:
-            sys.stdout.write(tostring(xnrml))
-        else:
-            sys.stdout.write(etree.tostring(xnrml, encoding='unicode', method='xml'))
+        sys.stdout.write(
+            etree.tostring(xnrml, encoding='unicode', method='xml'))

@@ -24,7 +24,7 @@ def db_connections(db_confs):
     conns = {}
     for k in db_confs.keys():
         db_conf = db_confs[k]
-        kwargs={}
+        kwargs = {}
         if 'OPTIONS' in db_conf:
             if 'sslmode' in db_conf['OPTIONS']:
                 kwargs['sslmode'] = db_conf['OPTIONS']['sslmode']
