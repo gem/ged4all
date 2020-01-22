@@ -245,4 +245,7 @@ if __name__ == '__main__':
 
         verbose_message("Exporting {0}\n".format(xmodel_id))
         sys.stdout.write('<?xml version="1.0" encoding="UTF-8"?>\n')
-        sys.stdout.write(tostring(xnrml))
+        if sys.version_info[0] < 3:
+            sys.stdout.write(tostring(xnrml))
+        else:
+            sys.stdout.write(etree.tostring(xnrml, encoding='unicode', method='xml'))
