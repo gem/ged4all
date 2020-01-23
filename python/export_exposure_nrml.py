@@ -25,14 +25,8 @@ population grid.
 """
 import sys
 from xml.etree import ElementTree as etree
-
-from openquake.baselib.node import tostring
-from django.db import connections
-from django.conf import settings
-
-
+from database import db_connections
 import db_settings
-settings.configure(DATABASES=db_settings.DATABASES)
 
 VERBOSE = False
 
@@ -160,8 +154,9 @@ def _handle_contribution(exm, cursor, model_id):
         contribution = etree.SubElement(exm, 'contribution')
         etree.SubElement(contribution, 'model_source').text = \
             con_dict['model_source']
-        etree.SubElement(contribution, 'model_date').text = \
-            con_dict['model_date']
+        md = con_dict['model_date']
+        if md is not None:
+            etree.SubElement(contribution, 'model_date').text = str(md)
         etree.SubElement(contribution, 'notes').text = \
             con_dict['notes']
         etree.SubElement(contribution, 'license_code').text = \
@@ -224,6 +219,8 @@ def exposure_to_nrml(model_id):
     """
     Return a NRML XML tree for the exposure model with the specified id
     """
+    connections = db_connections(db_settings.db_confs)
+
     with connections['geddb'].cursor() as cursor:
         cursor.execute(MODEL_QUERY, [model_id])
         model_dict = dictfetchone(cursor)
@@ -245,4 +242,5 @@ if __name__ == '__main__':
 
         verbose_message("Exporting {0}\n".format(xmodel_id))
         sys.stdout.write('<?xml version="1.0" encoding="UTF-8"?>\n')
-        sys.stdout.write(tostring(xnrml))
+        sys.stdout.write(
+            etree.tostring(xnrml, encoding='unicode', method='xml'))
