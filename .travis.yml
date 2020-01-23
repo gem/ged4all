@@ -4,13 +4,6 @@ language: python
 jobs:
   include:
   - stage: test
-    env: PYTHON2
-    python: 2.7
-    install:
-     - pip -q install -U flake8
-    script:
-     - flake8 ./python/
-  - stage: test
     env: PYTHON3
     python: 3.6
     install:
