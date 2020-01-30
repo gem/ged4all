@@ -27,13 +27,10 @@ import sys
 
 from openquake.hazardlib.nrml import read
 from openquake.commonlib import readinput
-from django.db import connections
-from django.conf import settings
+from database import db_connections
+import db_settings
 
 from cf_common import License
-
-import db_settings
-settings.configure(DATABASES=db_settings.DATABASES)
 
 VERBOSE = False
 
@@ -341,14 +338,17 @@ def import_exposure_model(ex, nrml_file):
     Import exposure from an exposure model node
     """
     verbose_message("Model contains {0} assets\n" .format(len(ex.assets)))
+    connections = db_connections(db_settings.db_confs)
+    connection = connections['gedcontrib']
 
-    with connections['gedcontrib'].cursor() as cursor:
+    with connection.cursor() as cursor:
         License.load_licenses(cursor)
         model_id = _import_model(cursor, ex)
         _import_contribution(cursor, ex, model_id)
         verbose_message('Inserted model, id={0}\n'.format(model_id))
         ctd = _import_cost_types(cursor, ex, model_id)
         _import_assets(cursor, ex, ctd, model_id, nrml_file)
+        connection.commit()
         return model_id
 
 
