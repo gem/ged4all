@@ -2,11 +2,12 @@
 --  . install oq-platform-taxtweb python package system-wide
 --  . use CREATE LANGUAGE plpython3u; to be able to run it
 --  . load this function once in the database
+DROP FUNCTION IF EXISTS cf_common.taxonomy2human;
 CREATE OR REPLACE FUNCTION cf_common.taxonomy2human (taxonomy text) RETURNS text AS 
     $$
-        from openquakeplatform_taxtweb.utils.taxonomy2human import taxonomy2human as taxonomy2human_py
+        from openquake.taxonomy.taxonomy2human import taxonomy2human
 
-        return taxonomy2human_py(taxonomy)
+        return taxonomy2human(taxonomy)
     $$ 
 	LANGUAGE plpython3u 
 	IMMUTABLE 
