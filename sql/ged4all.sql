@@ -2,27 +2,31 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.16
--- Dumped by pg_dump version 9.5.16
+-- Dumped from database version 11.6 (Debian 11.6-1.pgdg100+1)
+-- Dumped by pg_dump version 11.6 (Debian 11.6-1.pgdg100+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SELECT pg_catalog.set_config('search_path', '', false);
 SET check_function_bodies = false;
+SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
 --
--- Name: ged4all; Type: SCHEMA; Schema: -; Owner: -
+-- Name: ged4all; Type: SCHEMA; Schema: -; Owner: ged4allcontrib
 --
 
 CREATE SCHEMA ged4all;
 
 
+ALTER SCHEMA ged4all OWNER TO ged4allcontrib;
+
 --
--- Name: category_enum; Type: TYPE; Schema: ged4all; Owner: -
+-- Name: category_enum; Type: TYPE; Schema: ged4all; Owner: ged4allcontrib
 --
 
 CREATE TYPE ged4all.category_enum AS ENUM (
@@ -33,10 +37,14 @@ CREATE TYPE ged4all.category_enum AS ENUM (
 );
 
 
+ALTER TYPE ged4all.category_enum OWNER TO ged4allcontrib;
+
+SET default_tablespace = '';
+
 SET default_with_oids = false;
 
 --
--- Name: asset; Type: TABLE; Schema: ged4all; Owner: -
+-- Name: asset; Type: TABLE; Schema: ged4all; Owner: ged4allcontrib
 --
 
 CREATE TABLE ged4all.asset (
@@ -53,8 +61,10 @@ CREATE TABLE ged4all.asset (
 );
 
 
+ALTER TABLE ged4all.asset OWNER TO ged4allcontrib;
+
 --
--- Name: cost; Type: TABLE; Schema: ged4all; Owner: -
+-- Name: cost; Type: TABLE; Schema: ged4all; Owner: ged4allcontrib
 --
 
 CREATE TABLE ged4all.cost (
@@ -68,8 +78,10 @@ CREATE TABLE ged4all.cost (
 );
 
 
+ALTER TABLE ged4all.cost OWNER TO ged4allcontrib;
+
 --
--- Name: model_cost_type; Type: TABLE; Schema: ged4all; Owner: -
+-- Name: model_cost_type; Type: TABLE; Schema: ged4all; Owner: ged4allcontrib
 --
 
 CREATE TABLE ged4all.model_cost_type (
@@ -82,8 +94,10 @@ CREATE TABLE ged4all.model_cost_type (
 );
 
 
+ALTER TABLE ged4all.model_cost_type OWNER TO ged4allcontrib;
+
 --
--- Name: occupancy; Type: TABLE; Schema: ged4all; Owner: -
+-- Name: occupancy; Type: TABLE; Schema: ged4all; Owner: ged4allcontrib
 --
 
 CREATE TABLE ged4all.occupancy (
@@ -94,8 +108,10 @@ CREATE TABLE ged4all.occupancy (
 );
 
 
+ALTER TABLE ged4all.occupancy OWNER TO ged4allcontrib;
+
 --
--- Name: all_exposure; Type: VIEW; Schema: ged4all; Owner: -
+-- Name: all_exposure; Type: VIEW; Schema: ged4all; Owner: ged4allcontrib
 --
 
 CREATE VIEW ged4all.all_exposure AS
@@ -118,8 +134,10 @@ CREATE VIEW ged4all.all_exposure AS
      LEFT JOIN ged4all.occupancy occ ON ((occ.asset_id = a.id)));
 
 
+ALTER TABLE ged4all.all_exposure OWNER TO ged4allcontrib;
+
 --
--- Name: asset_id_seq; Type: SEQUENCE; Schema: ged4all; Owner: -
+-- Name: asset_id_seq; Type: SEQUENCE; Schema: ged4all; Owner: ged4allcontrib
 --
 
 CREATE SEQUENCE ged4all.asset_id_seq
@@ -130,15 +148,17 @@ CREATE SEQUENCE ged4all.asset_id_seq
     CACHE 1;
 
 
+ALTER TABLE ged4all.asset_id_seq OWNER TO ged4allcontrib;
+
 --
--- Name: asset_id_seq; Type: SEQUENCE OWNED BY; Schema: ged4all; Owner: -
+-- Name: asset_id_seq; Type: SEQUENCE OWNED BY; Schema: ged4all; Owner: ged4allcontrib
 --
 
 ALTER SEQUENCE ged4all.asset_id_seq OWNED BY ged4all.asset.id;
 
 
 --
--- Name: contribution; Type: TABLE; Schema: ged4all; Owner: -
+-- Name: contribution; Type: TABLE; Schema: ged4all; Owner: ged4allcontrib
 --
 
 CREATE TABLE ged4all.contribution (
@@ -147,14 +167,18 @@ CREATE TABLE ged4all.contribution (
     model_source character varying NOT NULL,
     model_date date NOT NULL,
     notes text,
-    license_id integer NOT NULL,
     version character varying,
-    purpose text
+    purpose text,
+    project character varying,
+    contributed_at timestamp without time zone DEFAULT now() NOT NULL,
+    license_code character varying NOT NULL
 );
 
 
+ALTER TABLE ged4all.contribution OWNER TO ged4allcontrib;
+
 --
--- Name: contribution_id_seq; Type: SEQUENCE; Schema: ged4all; Owner: -
+-- Name: contribution_id_seq; Type: SEQUENCE; Schema: ged4all; Owner: ged4allcontrib
 --
 
 CREATE SEQUENCE ged4all.contribution_id_seq
@@ -165,15 +189,17 @@ CREATE SEQUENCE ged4all.contribution_id_seq
     CACHE 1;
 
 
+ALTER TABLE ged4all.contribution_id_seq OWNER TO ged4allcontrib;
+
 --
--- Name: contribution_id_seq; Type: SEQUENCE OWNED BY; Schema: ged4all; Owner: -
+-- Name: contribution_id_seq; Type: SEQUENCE OWNED BY; Schema: ged4all; Owner: ged4allcontrib
 --
 
 ALTER SEQUENCE ged4all.contribution_id_seq OWNED BY ged4all.contribution.id;
 
 
 --
--- Name: cost_id_seq; Type: SEQUENCE; Schema: ged4all; Owner: -
+-- Name: cost_id_seq; Type: SEQUENCE; Schema: ged4all; Owner: ged4allcontrib
 --
 
 CREATE SEQUENCE ged4all.cost_id_seq
@@ -184,15 +210,17 @@ CREATE SEQUENCE ged4all.cost_id_seq
     CACHE 1;
 
 
+ALTER TABLE ged4all.cost_id_seq OWNER TO ged4allcontrib;
+
 --
--- Name: cost_id_seq; Type: SEQUENCE OWNED BY; Schema: ged4all; Owner: -
+-- Name: cost_id_seq; Type: SEQUENCE OWNED BY; Schema: ged4all; Owner: ged4allcontrib
 --
 
 ALTER SEQUENCE ged4all.cost_id_seq OWNED BY ged4all.cost.id;
 
 
 --
--- Name: exposure_model; Type: TABLE; Schema: ged4all; Owner: -
+-- Name: exposure_model; Type: TABLE; Schema: ged4all; Owner: ged4allcontrib
 --
 
 CREATE TABLE ged4all.exposure_model (
@@ -209,8 +237,10 @@ CREATE TABLE ged4all.exposure_model (
 );
 
 
+ALTER TABLE ged4all.exposure_model OWNER TO ged4allcontrib;
+
 --
--- Name: exposure_model_id_seq; Type: SEQUENCE; Schema: ged4all; Owner: -
+-- Name: exposure_model_id_seq; Type: SEQUENCE; Schema: ged4all; Owner: ged4allcontrib
 --
 
 CREATE SEQUENCE ged4all.exposure_model_id_seq
@@ -221,15 +251,17 @@ CREATE SEQUENCE ged4all.exposure_model_id_seq
     CACHE 1;
 
 
+ALTER TABLE ged4all.exposure_model_id_seq OWNER TO ged4allcontrib;
+
 --
--- Name: exposure_model_id_seq; Type: SEQUENCE OWNED BY; Schema: ged4all; Owner: -
+-- Name: exposure_model_id_seq; Type: SEQUENCE OWNED BY; Schema: ged4all; Owner: ged4allcontrib
 --
 
 ALTER SEQUENCE ged4all.exposure_model_id_seq OWNED BY ged4all.exposure_model.id;
 
 
 --
--- Name: model_cost_type_id_seq; Type: SEQUENCE; Schema: ged4all; Owner: -
+-- Name: model_cost_type_id_seq; Type: SEQUENCE; Schema: ged4all; Owner: ged4allcontrib
 --
 
 CREATE SEQUENCE ged4all.model_cost_type_id_seq
@@ -240,15 +272,17 @@ CREATE SEQUENCE ged4all.model_cost_type_id_seq
     CACHE 1;
 
 
+ALTER TABLE ged4all.model_cost_type_id_seq OWNER TO ged4allcontrib;
+
 --
--- Name: model_cost_type_id_seq; Type: SEQUENCE OWNED BY; Schema: ged4all; Owner: -
+-- Name: model_cost_type_id_seq; Type: SEQUENCE OWNED BY; Schema: ged4all; Owner: ged4allcontrib
 --
 
 ALTER SEQUENCE ged4all.model_cost_type_id_seq OWNED BY ged4all.model_cost_type.id;
 
 
 --
--- Name: occupancy_id_seq; Type: SEQUENCE; Schema: ged4all; Owner: -
+-- Name: occupancy_id_seq; Type: SEQUENCE; Schema: ged4all; Owner: ged4allcontrib
 --
 
 CREATE SEQUENCE ged4all.occupancy_id_seq
@@ -259,15 +293,17 @@ CREATE SEQUENCE ged4all.occupancy_id_seq
     CACHE 1;
 
 
+ALTER TABLE ged4all.occupancy_id_seq OWNER TO ged4allcontrib;
+
 --
--- Name: occupancy_id_seq; Type: SEQUENCE OWNED BY; Schema: ged4all; Owner: -
+-- Name: occupancy_id_seq; Type: SEQUENCE OWNED BY; Schema: ged4all; Owner: ged4allcontrib
 --
 
 ALTER SEQUENCE ged4all.occupancy_id_seq OWNED BY ged4all.occupancy.id;
 
 
 --
--- Name: tags; Type: TABLE; Schema: ged4all; Owner: -
+-- Name: tags; Type: TABLE; Schema: ged4all; Owner: ged4allcontrib
 --
 
 CREATE TABLE ged4all.tags (
@@ -278,8 +314,10 @@ CREATE TABLE ged4all.tags (
 );
 
 
+ALTER TABLE ged4all.tags OWNER TO ged4allcontrib;
+
 --
--- Name: tags_id_seq; Type: SEQUENCE; Schema: ged4all; Owner: -
+-- Name: tags_id_seq; Type: SEQUENCE; Schema: ged4all; Owner: ged4allcontrib
 --
 
 CREATE SEQUENCE ged4all.tags_id_seq
@@ -290,64 +328,66 @@ CREATE SEQUENCE ged4all.tags_id_seq
     CACHE 1;
 
 
+ALTER TABLE ged4all.tags_id_seq OWNER TO ged4allcontrib;
+
 --
--- Name: tags_id_seq; Type: SEQUENCE OWNED BY; Schema: ged4all; Owner: -
+-- Name: tags_id_seq; Type: SEQUENCE OWNED BY; Schema: ged4all; Owner: ged4allcontrib
 --
 
 ALTER SEQUENCE ged4all.tags_id_seq OWNED BY ged4all.tags.id;
 
 
 --
--- Name: id; Type: DEFAULT; Schema: ged4all; Owner: -
+-- Name: asset id; Type: DEFAULT; Schema: ged4all; Owner: ged4allcontrib
 --
 
 ALTER TABLE ONLY ged4all.asset ALTER COLUMN id SET DEFAULT nextval('ged4all.asset_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: ged4all; Owner: -
+-- Name: contribution id; Type: DEFAULT; Schema: ged4all; Owner: ged4allcontrib
 --
 
 ALTER TABLE ONLY ged4all.contribution ALTER COLUMN id SET DEFAULT nextval('ged4all.contribution_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: ged4all; Owner: -
+-- Name: cost id; Type: DEFAULT; Schema: ged4all; Owner: ged4allcontrib
 --
 
 ALTER TABLE ONLY ged4all.cost ALTER COLUMN id SET DEFAULT nextval('ged4all.cost_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: ged4all; Owner: -
+-- Name: exposure_model id; Type: DEFAULT; Schema: ged4all; Owner: ged4allcontrib
 --
 
 ALTER TABLE ONLY ged4all.exposure_model ALTER COLUMN id SET DEFAULT nextval('ged4all.exposure_model_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: ged4all; Owner: -
+-- Name: model_cost_type id; Type: DEFAULT; Schema: ged4all; Owner: ged4allcontrib
 --
 
 ALTER TABLE ONLY ged4all.model_cost_type ALTER COLUMN id SET DEFAULT nextval('ged4all.model_cost_type_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: ged4all; Owner: -
+-- Name: occupancy id; Type: DEFAULT; Schema: ged4all; Owner: ged4allcontrib
 --
 
 ALTER TABLE ONLY ged4all.occupancy ALTER COLUMN id SET DEFAULT nextval('ged4all.occupancy_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: ged4all; Owner: -
+-- Name: tags id; Type: DEFAULT; Schema: ged4all; Owner: ged4allcontrib
 --
 
 ALTER TABLE ONLY ged4all.tags ALTER COLUMN id SET DEFAULT nextval('ged4all.tags_id_seq'::regclass);
 
 
 --
--- Name: asset_exposure_model_id_asset_ref_key; Type: CONSTRAINT; Schema: ged4all; Owner: -
+-- Name: asset asset_exposure_model_id_asset_ref_key; Type: CONSTRAINT; Schema: ged4all; Owner: ged4allcontrib
 --
 
 ALTER TABLE ONLY ged4all.asset
@@ -355,7 +395,7 @@ ALTER TABLE ONLY ged4all.asset
 
 
 --
--- Name: asset_pkey; Type: CONSTRAINT; Schema: ged4all; Owner: -
+-- Name: asset asset_pkey; Type: CONSTRAINT; Schema: ged4all; Owner: ged4allcontrib
 --
 
 ALTER TABLE ONLY ged4all.asset
@@ -363,7 +403,7 @@ ALTER TABLE ONLY ged4all.asset
 
 
 --
--- Name: contribution_pkey; Type: CONSTRAINT; Schema: ged4all; Owner: -
+-- Name: contribution contribution_pkey; Type: CONSTRAINT; Schema: ged4all; Owner: ged4allcontrib
 --
 
 ALTER TABLE ONLY ged4all.contribution
@@ -371,7 +411,7 @@ ALTER TABLE ONLY ged4all.contribution
 
 
 --
--- Name: cost_asset_id_cost_type_id_key; Type: CONSTRAINT; Schema: ged4all; Owner: -
+-- Name: cost cost_asset_id_cost_type_id_key; Type: CONSTRAINT; Schema: ged4all; Owner: ged4allcontrib
 --
 
 ALTER TABLE ONLY ged4all.cost
@@ -379,7 +419,7 @@ ALTER TABLE ONLY ged4all.cost
 
 
 --
--- Name: cost_pkey; Type: CONSTRAINT; Schema: ged4all; Owner: -
+-- Name: cost cost_pkey; Type: CONSTRAINT; Schema: ged4all; Owner: ged4allcontrib
 --
 
 ALTER TABLE ONLY ged4all.cost
@@ -387,7 +427,7 @@ ALTER TABLE ONLY ged4all.cost
 
 
 --
--- Name: exposure_model_pkey; Type: CONSTRAINT; Schema: ged4all; Owner: -
+-- Name: exposure_model exposure_model_pkey; Type: CONSTRAINT; Schema: ged4all; Owner: ged4allcontrib
 --
 
 ALTER TABLE ONLY ged4all.exposure_model
@@ -395,7 +435,7 @@ ALTER TABLE ONLY ged4all.exposure_model
 
 
 --
--- Name: model_cost_type_pkey; Type: CONSTRAINT; Schema: ged4all; Owner: -
+-- Name: model_cost_type model_cost_type_pkey; Type: CONSTRAINT; Schema: ged4all; Owner: ged4allcontrib
 --
 
 ALTER TABLE ONLY ged4all.model_cost_type
@@ -403,7 +443,7 @@ ALTER TABLE ONLY ged4all.model_cost_type
 
 
 --
--- Name: occupancy_pkey; Type: CONSTRAINT; Schema: ged4all; Owner: -
+-- Name: occupancy occupancy_pkey; Type: CONSTRAINT; Schema: ged4all; Owner: ged4allcontrib
 --
 
 ALTER TABLE ONLY ged4all.occupancy
@@ -411,7 +451,7 @@ ALTER TABLE ONLY ged4all.occupancy
 
 
 --
--- Name: tags_pkey; Type: CONSTRAINT; Schema: ged4all; Owner: -
+-- Name: tags tags_pkey; Type: CONSTRAINT; Schema: ged4all; Owner: ged4allcontrib
 --
 
 ALTER TABLE ONLY ged4all.tags
@@ -419,49 +459,49 @@ ALTER TABLE ONLY ged4all.tags
 
 
 --
--- Name: asset_exposure_model_id_idx; Type: INDEX; Schema: ged4all; Owner: -
+-- Name: asset_exposure_model_id_idx; Type: INDEX; Schema: ged4all; Owner: ged4allcontrib
 --
 
 CREATE INDEX asset_exposure_model_id_idx ON ged4all.asset USING btree (exposure_model_id);
 
 
 --
--- Name: asset_full_geom_idx; Type: INDEX; Schema: ged4all; Owner: -
+-- Name: asset_full_geom_idx; Type: INDEX; Schema: ged4all; Owner: ged4allcontrib
 --
 
 CREATE INDEX asset_full_geom_idx ON ged4all.asset USING gist (full_geom);
 
 
 --
--- Name: asset_the_geom_gist; Type: INDEX; Schema: ged4all; Owner: -
+-- Name: asset_the_geom_gist; Type: INDEX; Schema: ged4all; Owner: ged4allcontrib
 --
 
 CREATE INDEX asset_the_geom_gist ON ged4all.asset USING gist (the_geom);
 
 
 --
--- Name: cost_asset_id_idx; Type: INDEX; Schema: ged4all; Owner: -
+-- Name: cost_asset_id_idx; Type: INDEX; Schema: ged4all; Owner: ged4allcontrib
 --
 
 CREATE INDEX cost_asset_id_idx ON ged4all.cost USING btree (asset_id);
 
 
 --
--- Name: occupancy_asset_id_idx; Type: INDEX; Schema: ged4all; Owner: -
+-- Name: occupancy_asset_id_idx; Type: INDEX; Schema: ged4all; Owner: ged4allcontrib
 --
 
 CREATE INDEX occupancy_asset_id_idx ON ged4all.occupancy USING btree (asset_id);
 
 
 --
--- Name: tags_asset_id_idx; Type: INDEX; Schema: ged4all; Owner: -
+-- Name: tags_asset_id_idx; Type: INDEX; Schema: ged4all; Owner: ged4allcontrib
 --
 
 CREATE INDEX tags_asset_id_idx ON ged4all.tags USING btree (asset_id);
 
 
 --
--- Name: asset_exposure_model_id_fk; Type: FK CONSTRAINT; Schema: ged4all; Owner: -
+-- Name: asset asset_exposure_model_id_fk; Type: FK CONSTRAINT; Schema: ged4all; Owner: ged4allcontrib
 --
 
 ALTER TABLE ONLY ged4all.asset
@@ -469,7 +509,7 @@ ALTER TABLE ONLY ged4all.asset
 
 
 --
--- Name: contribution_exposure_model_id_fkey; Type: FK CONSTRAINT; Schema: ged4all; Owner: -
+-- Name: contribution contribution_exposure_model_id_fkey; Type: FK CONSTRAINT; Schema: ged4all; Owner: ged4allcontrib
 --
 
 ALTER TABLE ONLY ged4all.contribution
@@ -477,15 +517,7 @@ ALTER TABLE ONLY ged4all.contribution
 
 
 --
--- Name: contribution_license_fkey; Type: FK CONSTRAINT; Schema: ged4all; Owner: -
---
-
-ALTER TABLE ONLY ged4all.contribution
-    ADD CONSTRAINT contribution_license_fkey FOREIGN KEY (license_id) REFERENCES cf_common.license(id);
-
-
---
--- Name: cost_asset_id_fk; Type: FK CONSTRAINT; Schema: ged4all; Owner: -
+-- Name: cost cost_asset_id_fk; Type: FK CONSTRAINT; Schema: ged4all; Owner: ged4allcontrib
 --
 
 ALTER TABLE ONLY ged4all.cost
@@ -493,7 +525,7 @@ ALTER TABLE ONLY ged4all.cost
 
 
 --
--- Name: cost_cost_type_id_fkey; Type: FK CONSTRAINT; Schema: ged4all; Owner: -
+-- Name: cost cost_cost_type_id_fkey; Type: FK CONSTRAINT; Schema: ged4all; Owner: ged4allcontrib
 --
 
 ALTER TABLE ONLY ged4all.cost
@@ -501,7 +533,7 @@ ALTER TABLE ONLY ged4all.cost
 
 
 --
--- Name: model_cost_type_exposure_model_id_fk; Type: FK CONSTRAINT; Schema: ged4all; Owner: -
+-- Name: model_cost_type model_cost_type_exposure_model_id_fk; Type: FK CONSTRAINT; Schema: ged4all; Owner: ged4allcontrib
 --
 
 ALTER TABLE ONLY ged4all.model_cost_type
@@ -509,7 +541,7 @@ ALTER TABLE ONLY ged4all.model_cost_type
 
 
 --
--- Name: occupancy_asset_id_fk; Type: FK CONSTRAINT; Schema: ged4all; Owner: -
+-- Name: occupancy occupancy_asset_id_fk; Type: FK CONSTRAINT; Schema: ged4all; Owner: ged4allcontrib
 --
 
 ALTER TABLE ONLY ged4all.occupancy
@@ -517,7 +549,7 @@ ALTER TABLE ONLY ged4all.occupancy
 
 
 --
--- Name: tags_asset_id_fkey; Type: FK CONSTRAINT; Schema: ged4all; Owner: -
+-- Name: tags tags_asset_id_fkey; Type: FK CONSTRAINT; Schema: ged4all; Owner: ged4allcontrib
 --
 
 ALTER TABLE ONLY ged4all.tags
@@ -525,145 +557,108 @@ ALTER TABLE ONLY ged4all.tags
 
 
 --
--- Name: SCHEMA ged4all; Type: ACL; Schema: -; Owner: -
+-- Name: SCHEMA ged4all; Type: ACL; Schema: -; Owner: ged4allcontrib
 --
 
-REVOKE ALL ON SCHEMA ged4all FROM PUBLIC;
 GRANT USAGE ON SCHEMA ged4all TO ged4allusers;
 
 
 --
--- Name: TABLE asset; Type: ACL; Schema: ged4all; Owner: -
+-- Name: TABLE asset; Type: ACL; Schema: ged4all; Owner: ged4allcontrib
 --
 
-REVOKE ALL ON TABLE ged4all.asset FROM PUBLIC;
-GRANT ALL ON TABLE ged4all.asset TO ged4allcontrib;
 GRANT SELECT ON TABLE ged4all.asset TO ged4allusers;
 
 
 --
--- Name: TABLE cost; Type: ACL; Schema: ged4all; Owner: -
+-- Name: TABLE cost; Type: ACL; Schema: ged4all; Owner: ged4allcontrib
 --
 
-REVOKE ALL ON TABLE ged4all.cost FROM PUBLIC;
-GRANT ALL ON TABLE ged4all.cost TO ged4allcontrib;
 GRANT SELECT ON TABLE ged4all.cost TO ged4allusers;
 
 
 --
--- Name: TABLE model_cost_type; Type: ACL; Schema: ged4all; Owner: -
+-- Name: TABLE model_cost_type; Type: ACL; Schema: ged4all; Owner: ged4allcontrib
 --
 
-REVOKE ALL ON TABLE ged4all.model_cost_type FROM PUBLIC;
-GRANT ALL ON TABLE ged4all.model_cost_type TO ged4allcontrib;
 GRANT SELECT ON TABLE ged4all.model_cost_type TO ged4allusers;
 
 
 --
--- Name: TABLE occupancy; Type: ACL; Schema: ged4all; Owner: -
+-- Name: TABLE occupancy; Type: ACL; Schema: ged4all; Owner: ged4allcontrib
 --
 
-REVOKE ALL ON TABLE ged4all.occupancy FROM PUBLIC;
-GRANT ALL ON TABLE ged4all.occupancy TO ged4allcontrib;
 GRANT SELECT ON TABLE ged4all.occupancy TO ged4allusers;
 
 
 --
--- Name: TABLE all_exposure; Type: ACL; Schema: ged4all; Owner: -
+-- Name: TABLE all_exposure; Type: ACL; Schema: ged4all; Owner: ged4allcontrib
 --
 
-REVOKE ALL ON TABLE ged4all.all_exposure FROM PUBLIC;
 GRANT SELECT ON TABLE ged4all.all_exposure TO ged4allusers;
-GRANT ALL ON TABLE ged4all.all_exposure TO ged4allcontrib;
 
 
 --
--- Name: SEQUENCE asset_id_seq; Type: ACL; Schema: ged4all; Owner: -
+-- Name: SEQUENCE asset_id_seq; Type: ACL; Schema: ged4all; Owner: ged4allcontrib
 --
 
-REVOKE ALL ON SEQUENCE ged4all.asset_id_seq FROM PUBLIC;
-GRANT ALL ON SEQUENCE ged4all.asset_id_seq TO ged4allcontrib;
 GRANT SELECT,USAGE ON SEQUENCE ged4all.asset_id_seq TO ged4allusers;
 
 
 --
--- Name: TABLE contribution; Type: ACL; Schema: ged4all; Owner: -
+-- Name: TABLE contribution; Type: ACL; Schema: ged4all; Owner: ged4allcontrib
 --
 
-REVOKE ALL ON TABLE ged4all.contribution FROM PUBLIC;
-GRANT ALL ON TABLE ged4all.contribution TO ged4allcontrib;
 GRANT SELECT ON TABLE ged4all.contribution TO ged4allusers;
 
 
 --
--- Name: SEQUENCE contribution_id_seq; Type: ACL; Schema: ged4all; Owner: -
+-- Name: SEQUENCE contribution_id_seq; Type: ACL; Schema: ged4all; Owner: ged4allcontrib
 --
 
-REVOKE ALL ON SEQUENCE ged4all.contribution_id_seq FROM PUBLIC;
-GRANT ALL ON SEQUENCE ged4all.contribution_id_seq TO ged4allcontrib;
 GRANT SELECT,USAGE ON SEQUENCE ged4all.contribution_id_seq TO ged4allusers;
 
 
 --
--- Name: SEQUENCE cost_id_seq; Type: ACL; Schema: ged4all; Owner: -
+-- Name: SEQUENCE cost_id_seq; Type: ACL; Schema: ged4all; Owner: ged4allcontrib
 --
 
-REVOKE ALL ON SEQUENCE ged4all.cost_id_seq FROM PUBLIC;
-GRANT ALL ON SEQUENCE ged4all.cost_id_seq TO ged4allcontrib;
 GRANT SELECT,USAGE ON SEQUENCE ged4all.cost_id_seq TO ged4allusers;
 
 
 --
--- Name: TABLE exposure_model; Type: ACL; Schema: ged4all; Owner: -
+-- Name: TABLE exposure_model; Type: ACL; Schema: ged4all; Owner: ged4allcontrib
 --
 
-REVOKE ALL ON TABLE ged4all.exposure_model FROM PUBLIC;
-GRANT ALL ON TABLE ged4all.exposure_model TO ged4allcontrib;
 GRANT SELECT ON TABLE ged4all.exposure_model TO ged4allusers;
 
 
 --
--- Name: SEQUENCE exposure_model_id_seq; Type: ACL; Schema: ged4all; Owner: -
+-- Name: SEQUENCE exposure_model_id_seq; Type: ACL; Schema: ged4all; Owner: ged4allcontrib
 --
 
-REVOKE ALL ON SEQUENCE ged4all.exposure_model_id_seq FROM PUBLIC;
-GRANT ALL ON SEQUENCE ged4all.exposure_model_id_seq TO ged4allcontrib;
 GRANT SELECT,USAGE ON SEQUENCE ged4all.exposure_model_id_seq TO ged4allusers;
 
 
 --
--- Name: SEQUENCE model_cost_type_id_seq; Type: ACL; Schema: ged4all; Owner: -
+-- Name: SEQUENCE model_cost_type_id_seq; Type: ACL; Schema: ged4all; Owner: ged4allcontrib
 --
 
-REVOKE ALL ON SEQUENCE ged4all.model_cost_type_id_seq FROM PUBLIC;
-GRANT ALL ON SEQUENCE ged4all.model_cost_type_id_seq TO ged4allcontrib;
 GRANT SELECT,USAGE ON SEQUENCE ged4all.model_cost_type_id_seq TO ged4allusers;
 
 
 --
--- Name: SEQUENCE occupancy_id_seq; Type: ACL; Schema: ged4all; Owner: -
+-- Name: SEQUENCE occupancy_id_seq; Type: ACL; Schema: ged4all; Owner: ged4allcontrib
 --
 
-REVOKE ALL ON SEQUENCE ged4all.occupancy_id_seq FROM PUBLIC;
-GRANT ALL ON SEQUENCE ged4all.occupancy_id_seq TO ged4allcontrib;
 GRANT SELECT,USAGE ON SEQUENCE ged4all.occupancy_id_seq TO ged4allusers;
 
 
 --
--- Name: TABLE tags; Type: ACL; Schema: ged4all; Owner: -
+-- Name: TABLE tags; Type: ACL; Schema: ged4all; Owner: ged4allcontrib
 --
 
-REVOKE ALL ON TABLE ged4all.tags FROM PUBLIC;
-GRANT ALL ON TABLE ged4all.tags TO ged4allcontrib;
 GRANT SELECT ON TABLE ged4all.tags TO ged4allusers;
-
-
---
--- Name: SEQUENCE tags_id_seq; Type: ACL; Schema: ged4all; Owner: -
---
-
-REVOKE ALL ON SEQUENCE ged4all.tags_id_seq FROM PUBLIC;
-GRANT ALL ON SEQUENCE ged4all.tags_id_seq TO ged4allcontrib;
 
 
 --
