@@ -86,10 +86,7 @@ SELECT * FROM ged4all.tags WHERE asset_id=%s
 """
 
 CONTRIBUTION_QUERY = """
-SELECT c.*, l.code AS license_code
- FROM ged4all.contribution c
- JOIN cf_common.license l ON c.license_id=l.id
-WHERE exposure_model_id=%s
+SELECT * FROM ged4all.contribution WHERE exposure_model_id=%s
 """
 
 

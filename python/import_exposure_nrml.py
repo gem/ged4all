@@ -30,8 +30,6 @@ from openquake.commonlib import readinput
 from database import db_connections
 import db_settings
 
-from cf_common import License
-
 VERBOSE = False
 
 
@@ -141,7 +139,7 @@ def _import_cost_types(cursor, ex, model_id):
 CONTRIBUTION_QUERY = """
 INSERT INTO ged4all.contribution(
     model_source, model_date, notes,
-    license_id, purpose, version,
+    license_code, purpose, version,
     exposure_model_id
 )
 VALUES (
@@ -190,7 +188,7 @@ def _import_contribution(cursor, ex, model_id):
         _get_optional_child_text(cntr, 'model_source'),
         _get_optional_child_text(cntr, 'model_date'),
         _get_optional_child_text(cntr, 'notes'),
-        License.get_license_id(lc),
+        lc,
         _get_optional_child_text(cntr, 'purpose'),
         _get_optional_child_text(cntr, 'version'),
         model_id])
@@ -342,7 +340,6 @@ def import_exposure_model(ex, nrml_file):
     connection = connections['gedcontrib']
 
     with connection.cursor() as cursor:
-        License.load_licenses(cursor)
         model_id = _import_model(cursor, ex)
         _import_contribution(cursor, ex, model_id)
         verbose_message('Inserted model, id={0}\n'.format(model_id))
