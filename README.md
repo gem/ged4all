@@ -26,7 +26,7 @@ $ pip -U install pip
 $ pip install -r requirements.txt
 ```
 
-# Background Information
+## Background Information
 Schema and related tools for a database of natural hazard scenarios.
 
 This work was performed as part of the GFDRR/DFID [Challenge Fund](https://www.gfdrr.org/en/challengefund) and is now part of the [Risk Data Library](http://riskdatalibrary.org/project).
